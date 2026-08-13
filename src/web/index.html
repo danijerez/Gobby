@@ -18,7 +18,10 @@
     <button class="icon-btn back-btn" x-show="stack.length > 1" @click="back()" :title="t('back')" x-html="svg('back')"></button>
     <button class="brand" @click="goHome()" :title="t('home')"><span class="brand-logo"></span><span class="brand-name"><span>G</span><span>o</span><span>b</span><span>b</span><span>y</span></span></button>
     <div class="search-wrap" :class="{open: searchOpen}">
-      <button class="icon-btn search-toggle" @click="toggleSearch()" :title="t('search')" x-show="!searchOpen" x-html="svg('search')"></button>
+      <button class="search-toggle" @click="toggleSearch()" :title="t('search')" x-show="!searchOpen">
+        <span class="ic" x-html="svg('search')"></span>
+        <span class="search-toggle-lbl" x-text="t('search')"></span>
+      </button>
       <template x-if="searchOpen">
         <div class="search-field">
           <span class="search-ic" x-html="svg('search')"></span>
@@ -29,13 +32,7 @@
         </div>
       </template>
     </div>
-    <div class="root-info" x-show="top.view === 'home' && info.root" :title="info.root">
-      <span x-html="svg('folder')"></span>
-      <span class="root-path" x-text="info.root"></span>
-      <span class="root-count" x-text="info.total"></span>
-    </div>
-    <!-- inline progress: sits between the item count and the filter button; its
-         color signals the phase (scan vs cover-fetch) -->
+    <!-- inline progress (scan / cover-fetch): color signals the phase -->
     <div class="hprog" x-show="busy" :title="progLabel()" style="display:none">
       <div class="hprog-track" :class="['phase-'+prog.phase, {indeterminate: indeterminate()}]">
         <div class="hprog-fill" :style="indeterminate() ? '' : `width:${progPct()}%`"></div>
@@ -44,40 +41,61 @@
       <button class="hprog-stop" x-show="prog.phase === 'enrich'" @click="stopEnrich()" :title="t('stop')" x-html="svg('stop')"></button>
     </div>
     <span class="spacer" x-show="!busy"></span>
-    <button class="icon-btn filter-btn" x-show="top.view === 'home' && tab !== 'watch' && tab !== 'home'" :class="{active: showFilters, 'has-filters': activeChips().length}" @click="showFilters = !showFilters" :title="t('filters')" x-html="svg('filter')"></button>
-    <div class="menu-wrap lang-wrap" @keydown.escape="langOpen=false">
-      <button class="icon-btn lang-btn" :class="{active: langOpen}" @click="langOpen = !langOpen" title="Idioma / Language" x-text="lang.toUpperCase()"></button>
-      <div class="menu lang-menu" x-show="langOpen" @click.outside="langOpen=false" x-transition style="display:none">
+
+    <!-- one overflow menu holds everything: library info, filters, sound, theme,
+         language, and the actions. Header stays just brand + search + this. -->
+    <div class="menu-wrap" @keydown.escape="menuOpen=false">
+      <button class="icon-btn" :class="{active: menuOpen}" @click="menuOpen = !menuOpen" :disabled="busy" :title="t('more')" x-html="svg('more')"></button>
+      <div class="menu" x-show="menuOpen" @click.outside="menuOpen=false" x-transition style="display:none">
+        <!-- library location + item count -->
+        <div class="menu-info" x-show="info.root" :title="info.root">
+          <span x-html="svg('folder')"></span>
+          <span class="root-path" x-text="info.root"></span>
+          <span class="root-count" x-text="info.total"></span>
+        </div>
+        <div class="menu-sep" x-show="info.root"></div>
+
+        <!-- filters (only where a filterable grid is shown) -->
+        <button x-show="top.view === 'home' && tab !== 'watch' && tab !== 'home'" :class="{active: showFilters}" @click="showFilters = !showFilters; menuOpen=false">
+          <span x-html="svg('filter')"></span> <span x-text="t('filters')"></span>
+          <span class="menu-badge" x-show="activeChips().length" x-text="activeChips().length"></span>
+        </button>
+
+        <template x-if="['home','series','movie','audio','book'].includes(tab) && top.view==='home' && info.owner !== false">
+          <div style="display:contents">
+            <button data-enrich @click="enrich(false); menuOpen=false"><span x-html="svg('palette')"></span> <span x-text="t('enrichThemes')"></span></button>
+            <button data-enrich @click="enrich(true); menuOpen=false"><span x-html="svg('refresh')"></span> <span x-text="t('forceAll')"></span></button>
+          </div>
+        </template>
+        <div class="menu-sep"></div>
+
+        <button @click="openConnect(); menuOpen=false"><span x-html="svg('share')"></span> <span x-text="t('connect')"></span></button>
+        <button @click="mcpOpen=true; menuOpen=false"><span x-html="svg('plug')"></span> <span x-text="t('mcpConnect')"></span></button>
+        <button @click="aboutOpen=true; menuOpen=false"><span x-html="svg('info')"></span> <span x-text="t('about')"></span></button>
+
+        <div class="menu-sep owner-only"></div>
+        <button class="owner-only" @click="changeFolder(); menuOpen=false"><span x-html="svg('folder')"></span> <span x-text="t('changeFolder')"></span></button>
+        <button class="owner-only" @click="exportDb(); menuOpen=false"><span x-html="svg('download')"></span> <span x-text="t('exportDb')"></span></button>
+        <button class="owner-only" @click="importDb(); menuOpen=false"><span x-html="svg('external')"></span> <span x-text="t('importDb')"></span></button>
+
+        <div class="menu-sep"></div>
+        <!-- quick toggles: sound, theme -->
+        <button @click="toggleSound()"><span x-html="svg(soundOn ? 'volume' : 'mute')"></span> <span x-text="t('sound')"></span><span class="menu-state" x-text="soundOn ? t('on') : t('off')"></span></button>
+        <button @click="toggleTheme()"><span x-html="svg(theme === 'dark' ? 'sun' : 'moon')"></span> <span x-text="t('theme')"></span></button>
+
+        <div class="menu-sep"></div>
+        <!-- language row -->
+        <div class="menu-lbl" x-text="t('language')"></div>
         <template x-for="l in langs" :key="l">
-          <button :class="{active: l === lang}" @click="setLang(l); langOpen=false">
+          <button class="menu-lang" :class="{active: l === lang}" @click="setLang(l)">
             <span class="lang-code" x-text="l.toUpperCase()"></span>
             <span x-text="langName(l)"></span>
             <span class="lang-check" x-show="l === lang" x-html="svg('check')"></span>
           </button>
         </template>
-      </div>
-    </div>
-    <button class="icon-btn" @click="toggleSound()" :title="soundOn ? 'Sonido' : 'Silencio'" x-html="svg(soundOn ? 'volume' : 'mute')"></button>
-    <button class="icon-btn" @click="toggleTheme()" :title="t('theme')" x-html="svg(theme === 'dark' ? 'sun' : 'moon')"></button>
-    <a class="icon-btn" href="https://github.com/danijerez/Gobby" target="_blank" rel="noopener" title="GitHub" x-html="svg('github')"></a>
 
-    <div class="menu-wrap" @keydown.escape="menuOpen=false">
-      <button class="icon-btn" :class="{active: menuOpen}" @click="menuOpen = !menuOpen" :disabled="busy" :title="t('more')" x-html="svg('more')"></button>
-      <div class="menu" x-show="menuOpen" @click.outside="menuOpen=false" x-transition style="display:none">
-        <template x-if="['home','series','movie','audio','book'].includes(tab) && top.view==='home' && info.owner !== false">
-          <div style="display:contents">
-            <button data-enrich @click="enrich(false); menuOpen=false"><span x-html="svg('palette')"></span> <span x-text="t('enrichThemes')"></span></button>
-            <button data-enrich @click="enrich(true); menuOpen=false"><span x-html="svg('refresh')"></span> <span x-text="t('forceAll')"></span></button>
-            <div class="menu-sep"></div>
-          </div>
-        </template>
-        <button @click="openConnect(); menuOpen=false"><span x-html="svg('share')"></span> <span x-text="t('connect')"></span></button>
-        <button @click="mcpOpen=true; menuOpen=false"><span x-html="svg('plug')"></span> <span x-text="t('mcpConnect')"></span></button>
-        <button @click="aboutOpen=true; menuOpen=false"><span x-html="svg('info')"></span> <span x-text="t('about')"></span></button>
-        <div class="menu-sep owner-only"></div>
-        <button class="owner-only" @click="changeFolder(); menuOpen=false"><span x-html="svg('folder')"></span> <span x-text="t('changeFolder')"></span></button>
-        <button class="owner-only" @click="exportDb(); menuOpen=false"><span x-html="svg('download')"></span> <span x-text="t('exportDb')"></span></button>
-        <button class="owner-only" @click="importDb(); menuOpen=false"><span x-html="svg('external')"></span> <span x-text="t('importDb')"></span></button>
+        <div class="menu-sep"></div>
+        <a class="menu-link" href="https://github.com/danijerez/Gobby" target="_blank" rel="noopener"><span x-html="svg('github')"></span> <span>GitHub</span></a>
       </div>
     </div>
     <input type="file" x-ref="dbfile" accept=".db" style="display:none" @change="doImport($event)">
@@ -424,45 +442,57 @@
               </div>
               <div class="vplayer-controls">
               <button class="vplayer-btn" @click="togglePlay()" x-html="svg(playing ? 'pause' : 'play')"></button>
-              <!-- audio track selector (remux, when >1). Pass the value straight from
-                   the event — x-model + @change can fire before the model updates,
-                   which passed a stale index (the "works only sometimes" bug). -->
-              <select class="vplayer-sel" x-show="audioTracks.length > 1" @change="setAudio(+$event.target.value)" title="Audio">
-                <template x-for="a in audioTracks" :key="a.idx">
-                  <option :value="a.idx" x-text="trackLabel(audioTracks, a)" :selected="a.idx === audioSel"></option>
-                </template>
-              </select>
-              <!-- subtitle selector -->
-              <select class="vplayer-sel" x-show="subTracks.length" @change="setSub(+$event.target.value)" title="Subtítulos">
-                <option :value="-1" x-text="t('subsOff')" :selected="subSel === -1"></option>
-                <template x-for="s in subTracks" :key="s.idx">
-                  <option :value="s.idx" x-text="trackLabel(subTracks, s)" :selected="s.idx === subSel"></option>
-                </template>
-              </select>
-              <!-- subtitle appearance (size / colour / box) — shown when subs exist -->
-              <div class="subcfg-wrap" x-show="subTracks.length" @keydown.escape="subCfgOpen=false">
-                <button class="vplayer-btn" :class="{active: subCfgOpen}" @click="subCfgOpen = !subCfgOpen" x-html="svg('sliders')" :title="t('subStyle')"></button>
+              <span class="vplayer-spacer"></span>
+              <!-- everything but play/fullscreen folds behind the gear: audio track,
+                   subtitle track, and subtitle look. Keeps the bar from overflowing
+                   on a phone (where the seek row was getting squeezed off). -->
+              <div class="subcfg-wrap" x-show="audioTracks.length > 1 || subTracks.length" @keydown.escape="subCfgOpen=false">
+                <button class="vplayer-btn" :class="{active: subCfgOpen}" @click="subCfgOpen = !subCfgOpen" x-html="svg('gear')" :title="t('playerSettings')"></button>
                 <div class="subcfg" x-show="subCfgOpen" @click.outside="subCfgOpen=false" x-transition style="display:none">
-                  <div class="subcfg-row">
-                    <span class="subcfg-lbl" x-text="t('subSize')"></span>
-                    <div class="subcfg-seg">
-                      <template x-for="s in subScales" :key="s[0]">
-                        <button :class="{active: subCfg.scale === s[1]}" @click="setSubScale(s[1])" x-text="s[0]"></button>
+                  <!-- audio track (remux, when >1). Value straight off the event — x-model
+                       + @change can fire before the model updates (the "sometimes" bug). -->
+                  <div class="subcfg-row" x-show="audioTracks.length > 1">
+                    <span class="subcfg-lbl" x-text="t('acodec')"></span>
+                    <select class="subcfg-full" @change="setAudio(+$event.target.value)">
+                      <template x-for="a in audioTracks" :key="a.idx">
+                        <option :value="a.idx" x-text="trackLabel(audioTracks, a)" :selected="a.idx === audioSel"></option>
                       </template>
-                    </div>
+                    </select>
                   </div>
-                  <div class="subcfg-row">
-                    <span class="subcfg-lbl" x-text="t('subColor')"></span>
-                    <div class="subcfg-swatches">
-                      <template x-for="c in subColors" :key="c">
-                        <button class="subcfg-swatch" :class="{active: subCfg.color === c}" :style="`background:${c}`" @click="setSubColor(c)"></button>
+                  <div class="subcfg-row" x-show="subTracks.length">
+                    <span class="subcfg-lbl" x-text="t('subStyle')"></span>
+                    <select class="subcfg-full" @change="setSub(+$event.target.value)">
+                      <option :value="-1" x-text="t('subsOff')" :selected="subSel === -1"></option>
+                      <template x-for="s in subTracks" :key="s.idx">
+                        <option :value="s.idx" x-text="trackLabel(subTracks, s)" :selected="s.idx === subSel"></option>
                       </template>
+                    </select>
+                  </div>
+                  <!-- subtitle look, only useful with a subtitle showing -->
+                  <template x-if="subTracks.length && subSel >= 0">
+                    <div style="display:contents">
+                      <div class="subcfg-row">
+                        <span class="subcfg-lbl" x-text="t('subSize')"></span>
+                        <div class="subcfg-seg">
+                          <template x-for="s in subScales" :key="s[0]">
+                            <button :class="{active: subCfg.scale === s[1]}" @click="setSubScale(s[1])" x-text="s[0]"></button>
+                          </template>
+                        </div>
+                      </div>
+                      <div class="subcfg-row">
+                        <span class="subcfg-lbl" x-text="t('subColor')"></span>
+                        <div class="subcfg-swatches">
+                          <template x-for="c in subColors" :key="c">
+                            <button class="subcfg-swatch" :class="{active: subCfg.color === c}" :style="`background:${c}`" @click="setSubColor(c)"></button>
+                          </template>
+                        </div>
+                      </div>
+                      <div class="subcfg-row subcfg-toggle">
+                        <span class="subcfg-lbl" x-text="t('subBox')"></span>
+                        <button :class="{active: subCfg.boxed}" @click="toggleSubBox()" x-text="subCfg.boxed ? t('on') : t('off')"></button>
+                      </div>
                     </div>
-                  </div>
-                  <div class="subcfg-row subcfg-toggle">
-                    <span class="subcfg-lbl" x-text="t('subBox')"></span>
-                    <button :class="{active: subCfg.boxed}" @click="toggleSubBox()" x-text="subCfg.boxed ? t('on') : t('off')"></button>
-                  </div>
+                  </template>
                 </div>
               </div>
               <button class="vplayer-btn" @click="toggleFullscreen()" x-html="svg('fullscreen')" title="Pantalla completa"></button>

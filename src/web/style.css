@@ -78,9 +78,18 @@ header {
 .brand:hover .brand-name span:nth-child(5) { animation-delay: .2s; }
 @keyframes brand-hop { 0%,100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }
 .ic { width: 18px; height: 18px; display: block; }
-/* collapsed: just the magnifier button; expanded: a full-width field */
-.search-wrap { display: flex; align-items: center; flex-shrink: 0; }
-.search-wrap.open { flex: 1; max-width: 440px; }
+/* collapsed: a pill that reads as a search box ("🔍 Buscar…"); expanded: full field */
+.search-wrap { display: flex; align-items: center; flex: 1; min-width: 0; }
+.search-wrap.open { max-width: 440px; }
+.search-toggle {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); color: var(--muted);
+  padding: 8px 16px 8px 12px; border-radius: 999px; font-size: 14px;
+  max-width: 260px; transition: border-color .12s, color .12s;
+}
+.search-toggle:hover { border-color: var(--accent); color: var(--text); }
+.search-toggle .ic { width: 16px; height: 16px; flex-shrink: 0; }
+.search-toggle-lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .search-field { position: relative; flex: 1; display: flex; align-items: center; }
 .search-ic { position: absolute; left: 14px; color: var(--muted); pointer-events: none; display: flex; }
 .search {
@@ -97,12 +106,7 @@ header {
 .search-clear:hover { color: var(--text); }
 .search-clear .ic { width: 16px; height: 16px; }
 .spacer { flex: 1; }
-.root-info {
-  display: flex; align-items: center; gap: 7px; min-width: 0;
-  color: var(--muted); font-size: 12px; padding: 0 4px;
-}
-.root-info .ic { width: 15px; height: 15px; flex-shrink: 0; }
-.root-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; font-family: ui-monospace, monospace; }
+.root-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; font-family: ui-monospace, monospace; }
 .root-count { flex-shrink: 0; background: var(--surface-2); border-radius: 999px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) { .root-path { max-width: 120px; } }
 .icon-btn {
@@ -115,29 +119,36 @@ a.icon-btn { text-decoration: none; }
 .icon-btn:disabled { opacity: .5; cursor: wait; }
 .icon-btn.active { color: var(--text); background: var(--surface-2); }
 .icon-btn .ic { width: 16px; height: 16px; }
-.lang-btn { font-size: 12px; font-weight: 700; letter-spacing: .5px; font-family: var(--font-display); }
-.lang-menu { min-width: 190px; }
-.lang-menu button.active { background: var(--surface-2); }
-.lang-menu .lang-code { font-family: var(--font-display); font-weight: 700; letter-spacing: .5px; width: 26px; flex-shrink: 0; color: var(--muted); }
-.lang-menu button.active .lang-code { color: var(--text); }
-.lang-menu .lang-check { margin-left: auto; }
-.lang-menu .lang-check .ic { width: 15px; height: 15px; color: var(--accent); }
-
 .menu-wrap { position: relative; flex-shrink: 0; }
 .menu {
-  position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; min-width: 220px;
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; min-width: 240px;
+  max-height: min(80vh, 640px); overflow-y: auto;
   background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
   padding: 6px; box-shadow: 0 12px 30px rgba(0,0,0,.35);
   display: flex; flex-direction: column; gap: 2px;
 }
-.menu button {
+.menu button, .menu .menu-link {
   display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
-  background: none; border: 0; color: var(--text); cursor: pointer;
+  background: none; border: 0; color: var(--text); cursor: pointer; text-decoration: none;
   padding: 10px 12px; border-radius: 8px; font-size: 14px;
 }
-.menu button:hover { background: var(--surface-2); }
-.menu button .ic { width: 17px; height: 17px; color: var(--muted); }
+.menu button:hover, .menu .menu-link:hover { background: var(--surface-2); }
+.menu button .ic, .menu .menu-link .ic { width: 17px; height: 17px; color: var(--muted); }
 .menu-sep { height: 1px; background: var(--line); margin: 4px 6px; }
+/* trailing badge/state on a menu row (filter count, sound on/off) */
+.menu-badge, .menu-state { margin-left: auto; font-size: 12px; color: var(--muted); }
+.menu-badge { background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 0 7px; font-weight: 600; }
+/* library location row */
+.menu-info { display: flex; align-items: center; gap: 8px; padding: 8px 12px; color: var(--muted); font-size: 12px; min-width: 0; }
+.menu-info .ic { width: 15px; height: 15px; flex-shrink: 0; }
+/* small section label inside the menu */
+.menu-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); padding: 6px 12px 2px; }
+/* language rows */
+.menu-lang.active { background: var(--surface-2); }
+.menu-lang .lang-code { font-family: var(--font-display); font-weight: 700; letter-spacing: .5px; width: 26px; flex-shrink: 0; color: var(--muted); }
+.menu-lang.active .lang-code { color: var(--text); }
+.menu-lang .lang-check { margin-left: auto; }
+.menu-lang .lang-check .ic { width: 15px; height: 15px; color: var(--accent); }
 
 .about-brand { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
 .about-logo { width: 44px; height: 44px; animation: none; }
@@ -599,6 +610,15 @@ main, .watch { padding: 8px 22px; }
   .vplayer-sel { max-width: 88px; }
   .vplayer-btn svg { width: 24px; height: 24px; } /* bigger tap targets on touch */
 
+  /* overflow menu: pin near the right edge but clamp to the viewport so it can't
+     grow off-screen to the left (was cutting off labels on a phone) */
+  .menu {
+    right: 8px; min-width: 0;
+    width: min(320px, calc(100vw - 16px));
+  }
+  /* same clamp for the player's gear popover */
+  .subcfg { right: 0; width: min(240px, calc(100vw - 24px)); }
+
   /* stretch (not flex-start) so the action rail fills the width instead of
      shrinking to content and hugging the left; poster stays centered on its own. */
   .detail-aside { flex-direction: column; align-items: stretch; }
@@ -626,6 +646,11 @@ main, .watch { padding: 8px 22px; }
 /* custom video player */
 .vplayer { position: relative; background: #000; border-radius: 10px; overflow: hidden; line-height: 0; }
 .vplayer:fullscreen { border-radius: 0; }
+/* In fullscreen (esp. a phone held upright) the browser/OS paints a "fullscreen"
+   hint and gesture bar over the top/bottom edges. Pad the bar and close button by
+   the safe-area insets so they never hide behind that chrome. */
+.vplayer:fullscreen .vplayer-bar { padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+.vplayer:fullscreen .vplayer-close { top: calc(8px + env(safe-area-inset-top, 0px)); }
 .vplayer-video { width: 100%; max-height: 70vh; display: block; }
 /* fullscreen: fill the screen, keep aspect, and let the absolutely-positioned bar
    and subtitle overlay stay anchored to the player box (no flex, which shifted them) */
@@ -684,7 +709,7 @@ main, .watch { padding: 8px 22px; }
   text-shadow: none;
 }
 .controls-hidden .vplayer-subs { bottom: 24px; } /* sink toward the edge when the bar hides */
-.vplayer:fullscreen .vplayer-subs { bottom: 80px; }
+.vplayer:fullscreen .vplayer-subs { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
 
 /* subtitle settings popover (gear in the player bar) */
 .subcfg-wrap { position: relative; flex: none; }
@@ -714,6 +739,14 @@ main, .watch { padding: 8px 22px; }
   border-radius: 7px; padding: 6px 12px; font-size: 12px; cursor: pointer;
 }
 .subcfg-toggle button.active { background: #fff; color: #000; }
+.subcfg-full {
+  width: 100%; background: rgba(255,255,255,.08); color: #fff;
+  border: 1px solid rgba(255,255,255,.2); border-radius: 7px; padding: 7px 8px;
+  font-size: 13px; cursor: pointer;
+}
+.subcfg-full option { background: #222; color: #fff; }
+/* push the gear + fullscreen to the right edge, play stays left */
+.vplayer-spacer { flex: 1; }
 
 /* ---- big screens / TV: scale cards up so posters stay readable across a room ---- */
 @media (min-width: 1400px) {
@@ -738,16 +771,15 @@ main, .watch { padding: 8px 22px; }
 @media (max-width: 640px) {
   :root { --bottomnav: 64px; }
 
+  /* header is now just brand + search + overflow menu, so it fits one row: the
+     search pill grows to fill the middle, the menu stays pinned right. */
   header {
-    flex-wrap: wrap; gap: 10px 8px; padding: 10px 14px calc(10px + env(safe-area-inset-top,0px));
+    gap: 8px; padding: 10px 14px calc(10px + env(safe-area-inset-top,0px));
   }
-  .brand { font-size: 20px; order: 1; }
-  .search-wrap { order: 4; flex-basis: 100%; max-width: none; } /* own full-width row */
-  .search { padding-top: 12px; padding-bottom: 12px; }          /* 44px tap target */
-  .root-info { display: none !important; }                      /* disk path is noise on a phone */
+  .brand { font-size: 20px; }
+  .search-toggle { max-width: none; }   /* fill the middle so it clearly reads as search */
+  .search { padding-top: 12px; padding-bottom: 12px; } /* 44px tap target */
   .spacer { display: none; }
-  .icon-btn { order: 2; }
-  .menu-wrap { order: 3; }
 
   nav.tabs {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;

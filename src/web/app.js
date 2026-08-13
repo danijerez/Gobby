@@ -67,7 +67,7 @@ function gobby() {
         empty: 'Nada por aquí todavía.', episodes: 'episodios', tracks: 'temas', books: 'libros',
         title: 'Título', notes: 'Notas', rating: 'Valoración', location: 'Ubicación',
         director: 'Dirección', cast: 'Reparto', back: 'Atrás', add: 'Añadir',
-        enrichThemes: 'Buscar carátulas', theme: 'Cambiar tema', fetching: 'Buscando carátulas',
+        enrichThemes: 'Buscar carátulas', theme: 'Cambiar tema', fetching: 'Buscando carátulas', sound: 'Sonido', language: 'Idioma',
         forceAll: 'Rebuscar todo (sobrescribe)', stop: 'Parar',
         identify: 'ID (IMDb, ej. tt1375666)', update: 'Actualizar', updating: 'Actualizando…', editId: 'Editar ID', openRef: 'Ver referencia',
         section: 'Sección', autoSection: 'Automática', movieSection: 'Películas', seriesSection: 'Series', musicSection: 'Música', bookSection: 'Libros', filesSection: 'Ficheros',
@@ -77,7 +77,7 @@ function gobby() {
         fRating: 'Valoración mín.', fAny: 'Cualquiera', fGenre: 'Género', clear: 'Limpiar',
         openExternal: 'Copiar enlace', openWith: 'Abrir con…',
         copied: 'Copiado', openStream: 'Abrir', playHere: 'Reproducir aquí', subsOff: 'Sin subtítulos',
-        subStyle: 'Subtítulos', subSize: 'Tamaño', subColor: 'Color', subBox: 'Fondo', on: 'Sí', off: 'No',
+        subStyle: 'Subtítulos', subSize: 'Tamaño', subColor: 'Color', subBox: 'Fondo', on: 'Sí', off: 'No', playerSettings: 'Audio y subtítulos',
         scanning: 'Escaneando ficheros', source: 'Fuente', local: 'archivo local',
         resolution: 'Resolución', vcodec: 'Vídeo', acodec: 'Audio', channels: 'Canales', languages: 'Idiomas',
         audioWarn: 'Audio {c}: el navegador no lo reproduce. Verás vídeo sin sonido — ábrelo en un reproductor externo (VLC / MX Player).',
@@ -109,7 +109,7 @@ function gobby() {
         empty: 'Nothing here yet.', episodes: 'episodes', tracks: 'tracks', books: 'books',
         title: 'Title', notes: 'Notes', rating: 'Rating', location: 'Location',
         director: 'Director', cast: 'Cast', back: 'Back', add: 'Add',
-        enrichThemes: 'Fetch covers', theme: 'Toggle theme', fetching: 'Fetching covers',
+        enrichThemes: 'Fetch covers', theme: 'Toggle theme', fetching: 'Fetching covers', sound: 'Sound', language: 'Language',
         forceAll: 'Re-fetch all (overwrite)', stop: 'Stop',
         identify: 'ID (IMDb, e.g. tt1375666)', update: 'Update', updating: 'Updating…', editId: 'Edit ID', openRef: 'Open reference',
         section: 'Section', autoSection: 'Automatic', movieSection: 'Movies', seriesSection: 'Series', musicSection: 'Music', bookSection: 'Books', filesSection: 'Files',
@@ -119,7 +119,7 @@ function gobby() {
         fRating: 'Min. rating', fAny: 'Any', fGenre: 'Genre', clear: 'Clear',
         openExternal: 'Copy link', openWith: 'Open with…',
         copied: 'Copied', openStream: 'Open', playHere: 'Play here', subsOff: 'No subtitles',
-        subStyle: 'Subtitles', subSize: 'Size', subColor: 'Colour', subBox: 'Box', on: 'On', off: 'Off',
+        subStyle: 'Subtitles', subSize: 'Size', subColor: 'Colour', subBox: 'Box', on: 'On', off: 'Off', playerSettings: 'Audio & subtitles',
         scanning: 'Scanning files', source: 'Source', local: 'local file',
         resolution: 'Resolution', vcodec: 'Video', acodec: 'Audio', channels: 'Channels', languages: 'Languages',
         audioWarn: "Audio {c}: your browser can't decode it. Video will play with no sound — open it in an external player (VLC / MX Player).",
@@ -151,7 +151,7 @@ function gobby() {
         empty: 'Rien ici pour le moment.', episodes: 'épisodes', tracks: 'pistes', books: 'livres',
         title: 'Titre', notes: 'Notes', rating: 'Note', location: 'Emplacement',
         director: 'Réalisation', cast: 'Distribution', back: 'Retour', add: 'Ajouter',
-        enrichThemes: 'Chercher les jaquettes', theme: 'Changer de thème', fetching: 'Recherche des jaquettes',
+        enrichThemes: 'Chercher les jaquettes', theme: 'Changer de thème', fetching: 'Recherche des jaquettes', sound: 'Son', language: 'Langue',
         forceAll: 'Tout rechercher (écrase)', stop: 'Arrêter',
         identify: 'ID (IMDb, ex. tt1375666)', update: 'Mettre à jour', updating: 'Mise à jour…', editId: "Modifier l'ID", openRef: 'Voir la référence',
         section: 'Section', autoSection: 'Automatique', movieSection: 'Films', seriesSection: 'Séries', musicSection: 'Musique', bookSection: 'Livres', filesSection: 'Fichiers',
@@ -161,7 +161,7 @@ function gobby() {
         fRating: 'Note min.', fAny: 'Toutes', fGenre: 'Genre', clear: 'Effacer',
         openExternal: 'Copier le lien', openWith: 'Ouvrir avec…',
         copied: 'Copié', openStream: 'Ouvrir', playHere: 'Lire ici', subsOff: 'Sans sous-titres',
-        subStyle: 'Sous-titres', subSize: 'Taille', subColor: 'Couleur', subBox: 'Fond', on: 'Oui', off: 'Non',
+        subStyle: 'Sous-titres', subSize: 'Taille', subColor: 'Couleur', subBox: 'Fond', on: 'Oui', off: 'Non', playerSettings: 'Audio et sous-titres',
         scanning: 'Analyse des fichiers', source: 'Source', local: 'fichier local',
         resolution: 'Résolution', vcodec: 'Vidéo', acodec: 'Audio', channels: 'Canaux', languages: 'Langues',
         audioWarn: "Audio {c} : votre navigateur ne peut pas le décoder. La vidéo sera muette — ouvrez-la dans un lecteur externe (VLC / MX Player).",
@@ -193,7 +193,7 @@ function gobby() {
         empty: 'Hier ist noch nichts.', episodes: 'Folgen', tracks: 'Titel', books: 'Bücher',
         title: 'Titel', notes: 'Notizen', rating: 'Bewertung', location: 'Speicherort',
         director: 'Regie', cast: 'Besetzung', back: 'Zurück', add: 'Hinzufügen',
-        enrichThemes: 'Cover suchen', theme: 'Thema wechseln', fetching: 'Cover werden gesucht',
+        enrichThemes: 'Cover suchen', theme: 'Thema wechseln', fetching: 'Cover werden gesucht', sound: 'Ton', language: 'Sprache',
         forceAll: 'Alles neu suchen (überschreibt)', stop: 'Stopp',
         identify: 'ID (IMDb, z. B. tt1375666)', update: 'Aktualisieren', updating: 'Wird aktualisiert…', editId: 'ID bearbeiten', openRef: 'Referenz öffnen',
         section: 'Bereich', autoSection: 'Automatisch', movieSection: 'Filme', seriesSection: 'Serien', musicSection: 'Musik', bookSection: 'Bücher', filesSection: 'Dateien',
@@ -203,7 +203,7 @@ function gobby() {
         fRating: 'Mind. Bewertung', fAny: 'Beliebig', fGenre: 'Genre', clear: 'Löschen',
         openExternal: 'Link kopieren', openWith: 'Öffnen mit…',
         copied: 'Kopiert', openStream: 'Öffnen', playHere: 'Hier abspielen', subsOff: 'Keine Untertitel',
-        subStyle: 'Untertitel', subSize: 'Größe', subColor: 'Farbe', subBox: 'Box', on: 'An', off: 'Aus',
+        subStyle: 'Untertitel', subSize: 'Größe', subColor: 'Farbe', subBox: 'Box', on: 'An', off: 'Aus', playerSettings: 'Audio & Untertitel',
         scanning: 'Dateien werden gescannt', source: 'Quelle', local: 'lokale Datei',
         resolution: 'Auflösung', vcodec: 'Video', acodec: 'Audio', channels: 'Kanäle', languages: 'Sprachen',
         audioWarn: 'Audio {c}: Dein Browser kann es nicht decodieren. Das Video läuft ohne Ton — öffne es in einem externen Player (VLC / MX Player).',
@@ -235,7 +235,7 @@ function gobby() {
         empty: 'Qui non c’è ancora niente.', episodes: 'episodi', tracks: 'tracce', books: 'libri',
         title: 'Titolo', notes: 'Note', rating: 'Valutazione', location: 'Posizione',
         director: 'Regia', cast: 'Cast', back: 'Indietro', add: 'Aggiungi',
-        enrichThemes: 'Cerca copertine', theme: 'Cambia tema', fetching: 'Ricerca copertine',
+        enrichThemes: 'Cerca copertine', theme: 'Cambia tema', fetching: 'Ricerca copertine', sound: 'Suono', language: 'Lingua',
         forceAll: 'Ricerca tutto (sovrascrive)', stop: 'Ferma',
         identify: 'ID (IMDb, es. tt1375666)', update: 'Aggiorna', updating: 'Aggiornamento…', editId: 'Modifica ID', openRef: 'Apri riferimento',
         section: 'Sezione', autoSection: 'Automatica', movieSection: 'Film', seriesSection: 'Serie', musicSection: 'Musica', bookSection: 'Libri', filesSection: 'File',
@@ -245,7 +245,7 @@ function gobby() {
         fRating: 'Valutazione min.', fAny: 'Qualsiasi', fGenre: 'Genere', clear: 'Pulisci',
         openExternal: 'Copia link', openWith: 'Apri con…',
         copied: 'Copiato', openStream: 'Apri', playHere: 'Riproduci qui', subsOff: 'Senza sottotitoli',
-        subStyle: 'Sottotitoli', subSize: 'Dimensione', subColor: 'Colore', subBox: 'Sfondo', on: 'Sì', off: 'No',
+        subStyle: 'Sottotitoli', subSize: 'Dimensione', subColor: 'Colore', subBox: 'Sfondo', on: 'Sì', off: 'No', playerSettings: 'Audio e sottotitoli',
         scanning: 'Scansione dei file', source: 'Fonte', local: 'file locale',
         resolution: 'Risoluzione', vcodec: 'Video', acodec: 'Audio', channels: 'Canali', languages: 'Lingue',
         audioWarn: 'Audio {c}: il tuo browser non può decodificarlo. Il video andrà senza audio — aprilo in un lettore esterno (VLC / MX Player).',
@@ -277,7 +277,7 @@ function gobby() {
         empty: 'Ainda não há nada aqui.', episodes: 'episódios', tracks: 'faixas', books: 'livros',
         title: 'Título', notes: 'Notas', rating: 'Avaliação', location: 'Localização',
         director: 'Realização', cast: 'Elenco', back: 'Voltar', add: 'Adicionar',
-        enrichThemes: 'Procurar capas', theme: 'Mudar tema', fetching: 'A procurar capas',
+        enrichThemes: 'Procurar capas', theme: 'Mudar tema', fetching: 'A procurar capas', sound: 'Som', language: 'Idioma',
         forceAll: 'Procurar tudo (substitui)', stop: 'Parar',
         identify: 'ID (IMDb, ex. tt1375666)', update: 'Atualizar', updating: 'A atualizar…', editId: 'Editar ID', openRef: 'Ver referência',
         section: 'Secção', autoSection: 'Automática', movieSection: 'Filmes', seriesSection: 'Séries', musicSection: 'Música', bookSection: 'Livros', filesSection: 'Ficheiros',
@@ -287,7 +287,7 @@ function gobby() {
         fRating: 'Avaliação mín.', fAny: 'Qualquer', fGenre: 'Género', clear: 'Limpar',
         openExternal: 'Copiar ligação', openWith: 'Abrir com…',
         copied: 'Copiado', openStream: 'Abrir', playHere: 'Reproduzir aqui', subsOff: 'Sem legendas',
-        subStyle: 'Legendas', subSize: 'Tamanho', subColor: 'Cor', subBox: 'Fundo', on: 'Sim', off: 'Não',
+        subStyle: 'Legendas', subSize: 'Tamanho', subColor: 'Cor', subBox: 'Fundo', on: 'Sim', off: 'Não', playerSettings: 'Áudio e legendas',
         scanning: 'A analisar ficheiros', source: 'Fonte', local: 'ficheiro local',
         resolution: 'Resolução', vcodec: 'Vídeo', acodec: 'Áudio', channels: 'Canais', languages: 'Idiomas',
         audioWarn: 'Áudio {c}: o seu navegador não o consegue descodificar. O vídeo irá sem som — abra-o num leitor externo (VLC / MX Player).',
@@ -520,7 +520,6 @@ function gobby() {
       localStorage.setItem('gobby-theme', this.theme);
       document.documentElement.setAttribute('data-theme', this.theme);
     },
-    langOpen: false,
     langNames: { es: 'Español', en: 'English', fr: 'Français', de: 'Deutsch', it: 'Italiano', pt: 'Português' },
     langName(l) { return this.langNames[l] || l.toUpperCase(); },
     setLang(l) {
@@ -541,7 +540,7 @@ function gobby() {
         bookmark: '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/>',
         back: '<path d="m12 19-7-7 7-7M19 12H5"/>',
         check: '<path d="M20 6 9 17l-5-5"/>',
-        sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+        gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>',
         refresh: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
         folder: '<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9L9.6 3.9A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
         filter: '<path d="M22 3H2l8 9.5V19l4 2v-8.5L22 3Z"/>',
@@ -1176,6 +1175,10 @@ function gobby() {
     },
     // stop and unload the player (leaving the detail, switching item, close button).
     stopVideo() {
+      // Closing while fullscreen must drop out of it first — otherwise the browser
+      // stays fullscreen on the now-hidden player, leaving its own exit chrome on
+      // screen and swallowing clicks (the "X does nothing / app frozen" bug).
+      if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) {} }
       const v = this.$refs && this.$refs.vplayer;
       clearInterval(this._tick);
       if (v) { v.pause(); v.onloadedmetadata = null; v.removeAttribute('src'); v.load(); }
