@@ -1,0 +1,12 @@
+/bin/
+*.db
+*.exe
+run.err
+run.out
+/dist/
+*.db-wal
+*.db-shm
+
+# ffmpeg-slim build artifacts (regenerate with build/ffmpeg-slim/build.sh)
+/build/ffmpeg-slim/ff.dl
+/build/ffmpeg-slim/ffmpeg.exe

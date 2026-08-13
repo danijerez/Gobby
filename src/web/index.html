@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Gobby</title>
+  <link rel="icon" href="/logo.svg">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/cuelume.js"></script>
+  <script src="/app.js"></script>
+  <!-- Google Cast sender SDK (loaded by the browser from Google — 0 bytes in the
+       Gobby binary). If offline / unavailable, the Cast button just won't show. -->
+  <script defer src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+  <script defer src="/alpine.min.js"></script>
+</head>
+<body x-data="gobby()" x-init="init()" :class="{'is-guest': info.owner === false}">
+  <header>
+    <button class="icon-btn back-btn" x-show="stack.length > 1" @click="back()" :title="t('back')" x-html="svg('back')"></button>
+    <button class="brand" @click="goHome()" :title="t('home')"><span class="brand-logo"></span><span class="brand-name"><span>G</span><span>o</span><span>b</span><span>b</span><span>y</span></span></button>
+    <div class="search-wrap" :class="{open: searchOpen}">
+      <button class="icon-btn search-toggle" @click="toggleSearch()" :title="t('search')" x-show="!searchOpen" x-html="svg('search')"></button>
+      <template x-if="searchOpen">
+        <div class="search-field">
+          <span class="search-ic" x-html="svg('search')"></span>
+          <input class="search" x-ref="searchInput" type="search" :placeholder="t('search')"
+                 x-model="q" @input.debounce.250ms="runSearch()" @blur="searchBlur()"
+                 @keydown.escape="q=''; searchBlur()">
+          <button class="search-clear" @click="q=''; toggleSearch()" x-html="svg('back')"></button>
+        </div>
+      </template>
+    </div>
+    <div class="root-info" x-show="top.view === 'home' && info.root" :title="info.root">
+      <span x-html="svg('folder')"></span>
+      <span class="root-path" x-text="info.root"></span>
+      <span class="root-count" x-text="info.total"></span>
+    </div>
+    <!-- inline progress: sits between the item count and the filter button; its
+         color signals the phase (scan vs cover-fetch) -->
+    <div class="hprog" x-show="busy" :title="progLabel()" style="display:none">
+      <div class="hprog-track" :class="['phase-'+prog.phase, {indeterminate: indeterminate()}]">
+        <div class="hprog-fill" :style="indeterminate() ? '' : `width:${progPct()}%`"></div>
+      </div>
+      <span class="hprog-lbl" x-text="progLabel()"></span>
+      <button class="hprog-stop" x-show="prog.phase === 'enrich'" @click="stopEnrich()" :title="t('stop')" x-html="svg('stop')"></button>
+    </div>
+    <span class="spacer" x-show="!busy"></span>
+    <button class="icon-btn filter-btn" x-show="top.view === 'home' && tab !== 'watch' && tab !== 'home'" :class="{active: showFilters, 'has-filters': activeChips().length}" @click="showFilters = !showFilters" :title="t('filters')" x-html="svg('filter')"></button>
+    <div class="menu-wrap lang-wrap" @keydown.escape="langOpen=false">
+      <button class="icon-btn lang-btn" :class="{active: langOpen}" @click="langOpen = !langOpen" title="Idioma / Language" x-text="lang.toUpperCase()"></button>
+      <div class="menu lang-menu" x-show="langOpen" @click.outside="langOpen=false" x-transition style="display:none">
+        <template x-for="l in langs" :key="l">
+          <button :class="{active: l === lang}" @click="setLang(l); langOpen=false">
+            <span class="lang-code" x-text="l.toUpperCase()"></span>
+            <span x-text="langName(l)"></span>
+            <span class="lang-check" x-show="l === lang" x-html="svg('check')"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+    <button class="icon-btn" @click="toggleSound()" :title="soundOn ? 'Sonido' : 'Silencio'" x-html="svg(soundOn ? 'volume' : 'mute')"></button>
+    <button class="icon-btn" @click="toggleTheme()" :title="t('theme')" x-html="svg(theme === 'dark' ? 'sun' : 'moon')"></button>
+    <a class="icon-btn" href="https://github.com/danijerez/Gobby" target="_blank" rel="noopener" title="GitHub" x-html="svg('github')"></a>
+
+    <div class="menu-wrap" @keydown.escape="menuOpen=false">
+      <button class="icon-btn" :class="{active: menuOpen}" @click="menuOpen = !menuOpen" :disabled="busy" :title="t('more')" x-html="svg('more')"></button>
+      <div class="menu" x-show="menuOpen" @click.outside="menuOpen=false" x-transition style="display:none">
+        <template x-if="['home','series','movie','audio','book'].includes(tab) && top.view==='home' && info.owner !== false">
+          <div style="display:contents">
+            <button data-enrich @click="enrich(false); menuOpen=false"><span x-html="svg('palette')"></span> <span x-text="t('enrichThemes')"></span></button>
+            <button data-enrich @click="enrich(true); menuOpen=false"><span x-html="svg('refresh')"></span> <span x-text="t('forceAll')"></span></button>
+            <div class="menu-sep"></div>
+          </div>
+        </template>
+        <button @click="openConnect(); menuOpen=false"><span x-html="svg('share')"></span> <span x-text="t('connect')"></span></button>
+        <button @click="mcpOpen=true; menuOpen=false"><span x-html="svg('plug')"></span> <span x-text="t('mcpConnect')"></span></button>
+        <button @click="aboutOpen=true; menuOpen=false"><span x-html="svg('info')"></span> <span x-text="t('about')"></span></button>
+        <div class="menu-sep owner-only"></div>
+        <button class="owner-only" @click="changeFolder(); menuOpen=false"><span x-html="svg('folder')"></span> <span x-text="t('changeFolder')"></span></button>
+        <button class="owner-only" @click="exportDb(); menuOpen=false"><span x-html="svg('download')"></span> <span x-text="t('exportDb')"></span></button>
+        <button class="owner-only" @click="importDb(); menuOpen=false"><span x-html="svg('external')"></span> <span x-text="t('importDb')"></span></button>
+      </div>
+    </div>
+    <input type="file" x-ref="dbfile" accept=".db" style="display:none" @change="doImport($event)">
+  </header>
+
+  <nav class="tabs" x-show="!(searchOpen && q)">
+    <template x-for="tb in visibleTabs()" :key="tb">
+      <button :class="{on: tab===tb && stack.length===1}" @click="goTab(tb)"><span x-html="tabIcon(tb)"></span> <span x-text="t(tb)"></span></button>
+    </template>
+  </nav>
+
+  <main class="search-view" x-show="searchOpen && q" style="display:none">
+    <div class="section-head"><h2><span x-html="svg('search')"></span> <span x-text="q"></span></h2><span class="count" x-text="searchResults.length"></span></div>
+    <div class="grid">
+      <template x-for="res in searchResults" :key="res.section + '-' + res.id">
+        <div class="item" tabindex="0" role="button" @click="openSearch(res)" @keydown.enter.prevent="openSearch(res)">
+          <div class="case">
+            <div class="art" :style="artStyle(res)"></div>
+            <template x-if="!res.has_cover">
+              <div class="fallback"><span class="fb-ic" x-html="mediaIcon(res.section)"></span><span class="fb-ttl" x-text="res.group || res.title"></span></div>
+            </template>
+          </div>
+          <div class="meta"><div class="m-ttl" x-text="res.group || res.title"></div><div class="m-sub" x-text="searchSub(res)"></div></div>
+        </div>
+      </template>
+    </div>
+    <p class="empty" x-show="!searchResults.length" x-text="t('empty')"></p>
+  </main>
+
+  <div class="filter-panel" x-show="showFilters && top.view === 'home' && tab !== 'watch'" x-transition style="display:none">
+    <label><span x-text="t('fFormat')"></span>
+      <select x-model="filters.ext" @change="load()">
+        <option value="" x-text="t('fAny')"></option>
+        <template x-for="ext in formatOptions()" :key="ext">
+          <option :value="ext" x-text="'.' + ext"></option>
+        </template>
+      </select>
+    </label>
+    <label><span x-text="t('fYear')"></span>
+      <input type="number" inputmode="numeric" x-model="filters.year" @input.debounce.400ms="load()" placeholder="1990">
+    </label>
+    <label><span x-text="t('fCover')"></span>
+      <select x-model="filters.cover" @change="load()">
+        <option value="" x-text="t('fCoverAll')"></option>
+        <option value="with" x-text="t('fCoverWith')"></option>
+        <option value="without" x-text="t('fCoverWithout')"></option>
+      </select>
+    </label>
+    <label><span x-text="t('fRating')"></span>
+      <select x-model="filters.rating_min" @change="load()">
+        <option value="" x-text="t('fAny')"></option>
+        <option value="3">3★+</option>
+        <option value="4">4★+</option>
+        <option value="5">5★</option>
+      </select>
+    </label>
+    <label><span x-text="t('fGenre')"></span>
+      <input type="text" x-model="filters.genre" @input.debounce.300ms="load()" placeholder="…">
+    </label>
+    <button class="filter-clear" x-show="activeChips().length" @click="clearFilters()">
+      <span x-html="svg('trash')"></span> <span x-text="t('clearFilters')"></span>
+    </button>
+  </div>
+
+  <div class="chips-row" x-show="activeChips().length" style="display:none">
+    <template x-for="c in activeChips()" :key="c.k">
+      <span class="filter-chip"><span x-text="c.label"></span><button @click="removeChip(c.k)">✕</button></span>
+    </template>
+    <button class="chip-clear" @click="clearFilters()" x-text="t('clear')"></button>
+  </div>
+
+  <main class="home-view" x-show="top.view === 'home' && tab === 'home' && !searching()" style="display:none">
+    <template x-if="homeCont.length">
+      <div>
+        <div class="section-head"><h2><span x-html="svg('play')"></span> <span x-text="t('continueW')"></span></h2></div>
+        <div class="grid">
+          <template x-for="it in homeCont" :key="'c'+it.id">
+            <div class="item" tabindex="0" role="button" @click="openHome(it)" @keydown.enter.prevent="openHome(it)">
+              <div class="case">
+                <div class="art" :style="artStyle(it)"></div>
+                <template x-if="!it.has_cover"><div class="fallback"><span class="fb-ic" x-html="tabIcon(it.section==='music'?'audio':it.section)"></span><span class="fb-ttl" x-text="it.title"></span></div></template>
+                <span class="ep-badge cont-badge" x-show="epTag(it)" x-text="epTag(it)"></span>
+              </div>
+              <div class="meta"><div class="m-ttl" x-text="it.album || it.title"></div><div class="m-sub" x-text="epTag(it) ? t('continueAt') + ' ' + epTag(it) : (it.year || '')"></div></div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+
+    <template x-if="homeNew.length">
+      <div>
+        <div class="section-head"><h2><span x-html="svg('star')"></span> <span x-text="t('newlyAdded')"></span></h2></div>
+        <div class="grid">
+          <template x-for="it in homeNew" :key="'n'+it.id">
+            <div class="item" tabindex="0" role="button" @click="openHome(it)" @keydown.enter.prevent="openHome(it)">
+              <div class="case">
+                <div class="art" :style="artStyle(it)"></div>
+                <template x-if="!it.has_cover"><div class="fallback"><span class="fb-ic" x-html="tabIcon(it.section==='music'?'audio':it.section)"></span><span class="fb-ttl" x-text="it.title"></span></div></template>
+              </div>
+              <div class="meta"><div class="m-ttl" x-text="it.album || it.title"></div><div class="m-sub" x-text="it.year || ''"></div></div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+
+    <p class="empty" x-show="!homeCont.length && !homeNew.length" x-text="t('empty')"></p>
+  </main>
+
+  <main class="files-view" x-show="top.view === 'home' && tab === 'files' && !searching()" style="display:none">
+    <template x-if="tree">
+      <div class="tree-panel">
+        <div class="section-head">
+          <span class="count" x-text="treeTotal() + ' · ' + treeCount() + ' ' + t('filesUnit')"></span>
+        </div>
+        <div class="treemap">
+          <template x-for="tm in treemap()" :key="tm.path">
+            <div class="tm-tile" :style="'width:'+tm.w+'%;background:'+tm.color"
+                 :title="tm.name+' — '+fmtSize(tm.size)"
+                 @click="tm.dir ? toggleNode(tm.path) : openTreeLeaf(tm.node)">
+              <span class="tm-lbl" x-show="tm.w > 6" x-text="tm.name"></span>
+              <span class="tm-sz" x-show="tm.w > 10" x-text="fmtSize(tm.size)"></span>
+            </div>
+          </template>
+        </div>
+        <div class="treeview">
+          <template x-for="row in treeRows()" :key="row.n.path">
+            <div class="tv-row" :style="'padding-left:'+(row.depth*16+4)+'px'"
+                 @click="row.n.dir ? toggleNode(row.n.path) : openTreeLeaf(row.n)">
+              <span class="tv-tw" x-show="row.n.dir" :class="{open: treeOpen[row.n.path]}" x-html="svg('chevron')"></span>
+              <span class="tv-tw" x-show="!row.n.dir"></span>
+              <span class="tv-ic" :style="'color:'+sectionColor(row.n.section)" x-html="svg(row.n.dir ? 'folder' : 'file')"></span>
+              <span class="tv-name" x-text="row.n.name"></span>
+              <span class="tv-count" x-show="row.n.dir" x-text="row.n.count"></span>
+              <span class="tv-bar"><span class="tv-bar-fill" :style="'width:'+treeBarPct(row)+'%;background:'+sectionColor(row.n.section)"></span></span>
+              <span class="tv-size" x-text="fmtSize(row.n.size)"></span>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+
+  </main>
+
+  <main x-show="top.view === 'home' && tab !== 'watch' && tab !== 'home' && tab !== 'files' && !searching()">
+    <template x-if="groups.length">
+      <div>
+        <div class="section-head"><h2 x-text="groupLabel()"></h2><span class="count" x-text="groups.length"></span></div>
+        <div class="grid" :class="{square: tab==='audio'}">
+          <template x-for="g in groups" :key="g.name">
+            <div class="item" tabindex="0" role="button" @click="openGroup(g)" @keydown.enter.prevent="openGroup(g)">
+              <div class="stack">
+                <span class="badge" x-text="g.items.length"></span>
+                <div class="case">
+                  <div class="art" :style="artStyle(g.items[0])"></div>
+                  <template x-if="!g.items[0] || !g.items[0].has_cover">
+                    <div class="fallback"><span class="fb-ic" x-html="mediaIcon()"></span><span class="fb-ttl" x-text="g.name"></span></div>
+                  </template>
+                </div>
+              </div>
+              <div class="meta"><div class="m-ttl" x-text="g.name"></div><div class="m-sub" x-text="[(g.items[0] && g.items[0].year) || '', g.items.length + ' ' + groupUnit()].filter(Boolean).join(' · ')"></div></div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+
+    <template x-if="loose.length">
+      <div>
+        <div class="section-head"><h2 x-text="looseLabel()"></h2><span class="count" x-text="looseTotal"></span></div>
+        <div class="grid" :class="{square: tab==='audio'}">
+          <template x-for="it in loose" :key="it.id">
+            <div class="item" tabindex="0" role="button" @click="openItem(it)" @keydown.enter.prevent="openItem(it)">
+              <div class="case">
+                <div class="art" :style="artStyle(it)"></div>
+                <template x-if="!it.has_cover">
+                  <div class="fallback"><span class="fb-ic" x-html="mediaIcon()"></span><span class="fb-ttl" x-text="it.title"></span></div>
+                </template>
+              </div>
+              <div class="meta"><div class="m-ttl" x-text="it.title"></div><div class="m-sub" x-text="[it.artist, it.year || ''].filter(Boolean).join(' · ')"></div></div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+
+    <div class="pager" x-show="pages() > 1" style="display:none">
+      <button class="pg-btn" @click="goPage(page - 1)" :disabled="page <= 1" x-html="svg('back')"></button>
+      <span class="pg-info"><span x-text="page"></span> / <span x-text="pages()"></span></span>
+      <button class="pg-btn pg-next" @click="goPage(page + 1)" :disabled="page >= pages()" x-html="svg('back')"></button>
+    </div>
+
+    <p class="empty" x-show="loose.length === 0 && groups.length === 0" x-text="t('empty')"></p>
+  </main>
+
+  <main x-show="top.view === 'series' && !searching()">
+    <template x-if="top.group">
+      <div class="series-page">
+        <div class="series-hero">
+          <div class="hero-case">
+            <div class="art" :style="artStyle(groupCover())"></div>
+            <template x-if="!groupCover() || !groupCover().has_cover">
+              <div class="fallback"><span class="fb-ic" x-html="mediaIcon()"></span></div>
+            </template>
+            <div class="cover-edit owner-only">
+              <button @click="$refs.groupcover.click()" :title="t('changeCover')"><span x-html="svg(coverBusy ? 'refresh' : 'palette')"></span></button>
+              <button @click="setCoverURL(groupCover())" :title="t('coverFromUrl')"><span x-html="svg('external')"></span></button>
+            </div>
+            <input type="file" x-ref="groupcover" accept="image/*" style="display:none" @change="uploadCover(groupCover(), $event)">
+          </div>
+          <div class="hero-info">
+            <h1 x-text="top.group.name"></h1>
+            <div class="chips">
+              <span class="chip" x-text="top.group.items.length + ' ' + groupUnit()"></span>
+              <span class="chip" x-show="top.group.show && top.group.show.year"><span x-html="svg('clapper')"></span> <span x-text="top.group.show && top.group.show.year"></span></span>
+              <span class="chip" x-show="showMeta().runtime"><span x-html="svg('clock')"></span> <span x-text="showMeta().runtime"></span></span>
+              <span class="chip rating" x-show="showMeta().imdb_rating"><span x-html="svg('star')"></span> <span x-text="showMeta().imdb_rating"></span></span>
+            </div>
+            <div class="genres" x-show="showMeta().genres" x-text="showMeta().genres && showMeta().genres.join(' · ')"></div>
+            <p class="synopsis" x-show="showMeta().description" x-text="showMeta().description"></p>
+            <dl class="facts">
+              <template x-if="showMeta().director && showMeta().director.length">
+                <div class="fact"><dt><span x-html="svg('clapper')"></span> <span x-text="t('director')"></span></dt><dd x-text="showMeta().director.join(', ')"></dd></div>
+              </template>
+              <template x-if="showMeta().cast && showMeta().cast.length">
+                <div class="fact"><dt><span x-html="svg('users')"></span> <span x-text="t('cast')"></span></dt><dd x-text="showMeta().cast.slice(0,8).join(', ')"></dd></div>
+              </template>
+            </dl>
+
+            <div class="identify owner-only">
+              <input class="id-input" x-model="groupID" :placeholder="idLabel(top.group.items[0] && top.group.items[0].kind)" :readonly="!editId">
+              <button class="id-btn ghost" :class="{active: editId}" @click="editId = !editId" x-html="svg('edit')" :title="t('editId')"></button>
+              <a class="id-btn ghost" x-show="refURL(top.group.items[0] && top.group.items[0].kind, groupID)" :href="refURL(top.group.items[0] && top.group.items[0].kind, groupID)" target="_blank" rel="noopener" x-html="svg('external')" :title="t('openRef')"></a>
+              <button class="id-btn" @click="refetchGroup()" :disabled="refetching" x-html="svg('refresh')" :title="t('update')"></button>
+            </div>
+          </div>
+        </div>
+        <!-- season tabs (only when there's more than one season) -->
+        <div class="season-tabs" x-show="hasSeasons(top.group) && seasonsOf(top.group).length > 1">
+          <template x-for="se in seasonsOf(top.group)" :key="se.season">
+            <button class="season-tab" :class="{on: shownSeason(top.group).season === se.season}" @click="activeSeason = se.season">
+              <span x-text="se.season > 0 ? t('season') + ' ' + se.season : t('otherEps')"></span>
+              <span class="st-count" x-text="se.items.length"></span>
+            </button>
+          </template>
+        </div>
+
+        <div class="ep-grid">
+          <template x-for="it in (shownSeason(top.group) ? shownSeason(top.group).items : [])" :key="it.id">
+            <div class="ep" :class="{resume: it.id === resumeEpId}" tabindex="0" role="button" @click="openItem(it)" @keydown.enter.prevent="openItem(it)">
+              <div class="ep-thumb">
+                <div class="art" :style="epStyle(it, top.group)"></div>
+                <span class="ep-badge" x-show="it.episode" x-text="(it.season ? 'S'+String(it.season).padStart(2,'0') : '') + 'E' + String(it.episode).padStart(2,'0')"></span>
+                <span class="resume-tag" x-show="it.id === resumeEpId" x-text="t('resumeHere')"></span>
+              </div>
+              <div class="ep-ttl" x-text="it.title"></div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+  </main>
+
+  <main x-show="top.view === 'item' && !searching()">
+    <template x-if="top.item">
+      <div class="detail" x-data="{ it: top.item }">
+        <div class="detail-aside">
+          <div class="big-case">
+            <div class="art" :style="artStyle(it)"></div>
+            <template x-if="!it.has_cover">
+              <div class="fallback"><span class="fb-ic" x-html="mediaIcon(it.section)"></span><span class="fb-ttl" x-text="it.title"></span></div>
+            </template>
+            <div class="cover-edit owner-only">
+              <button @click="$refs.coverfile.click()" :title="t('changeCover')"><span x-html="svg(coverBusy ? 'refresh' : 'palette')"></span></button>
+              <button @click="setCoverURL(it)" :title="t('coverFromUrl')"><span x-html="svg('external')"></span></button>
+            </div>
+            <input type="file" x-ref="coverfile" accept="image/*" style="display:none" @change="uploadCover(it, $event)">
+          </div>
+
+          <div class="actions" x-show="it.kind === 'video' && !videoOpen">
+            <button class="action primary" @click="playHere(it)"><span x-html="svg('play')"></span> <span x-text="t('playHere')"></span></button>
+            <a class="action" :href="streamURL(it)" target="_blank" rel="noopener" @click="markOpened(it)"><span x-html="svg('external')"></span> <span x-text="t('openTab')"></span></a>
+            <a class="action" x-show="isAndroid()" :href="androidIntent(it)" @click="markOpened(it)"><span x-html="svg('external')"></span> <span x-text="t('openWith')"></span></a>
+            <button class="action" x-show="canCast()" @click="cast(it)"><span x-html="svg('cast')"></span> <span x-text="t('castTo')"></span></button>
+            <button class="action" x-show="canShare()" @click="share(it)"><span x-html="svg('external')"></span> <span x-text="t('send')"></span></button>
+            <button class="action" @click="copyStream(it)"><span x-html="svg('copy')"></span> <span x-text="copied ? t('copied') : t('openExternal')"></span></button>
+            <a class="action" :href="downloadURL(it)"><span x-html="svg('download')"></span> <span x-text="t('download')"></span></a>
+            <a class="action" x-show="imdbURL(it)" :href="imdbURL(it)" target="_blank" rel="noopener"><span x-html="svg('external')"></span> IMDb</a>
+          </div>
+          <div class="actions" x-show="previewType(it)">
+            <button class="action primary" @click="togglePreview(); markOpened(it)">
+              <span x-html="svg('play')"></span> <span x-text="t('preview')"></span>
+            </button>
+            <button class="action" x-show="canCast() && it.kind==='audio'" @click="cast(it)"><span x-html="svg('cast')"></span> <span x-text="t('castTo')"></span></button>
+            <a class="action" :href="streamURL(it)" target="_blank" rel="noopener" @click="markOpened(it)"><span x-html="svg('external')"></span> <span x-text="t('openTab')"></span></a>
+            <button class="action" @click="copyStream(it)"><span x-html="svg('copy')"></span> <span x-text="copied ? t('copied') : t('openExternal')"></span></button>
+            <a class="action" :href="downloadURL(it)"><span x-html="svg('download')"></span> <span x-text="t('download')"></span></a>
+          </div>
+          <!-- no inline preview (odd book formats, generic files): download / open / copy -->
+          <div class="actions" x-show="it.kind !== 'video' && it.kind !== 'audio' && !previewType(it)">
+            <a class="action primary" :href="downloadURL(it)" @click="markOpened(it)"><span x-html="svg('download')"></span> <span x-text="t('download')"></span></a>
+            <a class="action" :href="streamURL(it)" target="_blank" rel="noopener" @click="markOpened(it)"><span x-html="svg('external')"></span> <span x-text="t('openTab')"></span></a>
+            <button class="action" @click="copyStream(it)"><span x-html="svg('copy')"></span> <span x-text="copied ? t('copied') : t('openExternal')"></span></button>
+          </div>
+        </div>
+
+        <div class="detail-main">
+          <h1 x-text="it.title"></h1>
+          <div class="chips">
+            <span class="chip" x-show="it.year"><span x-html="svg('clapper')"></span> <span x-text="it.year"></span></span>
+            <span class="chip" x-show="it.meta && it.meta.runtime"><span x-html="svg('clock')"></span> <span x-text="it.meta && it.meta.runtime"></span></span>
+            <span class="chip rating" x-show="it.meta && it.meta.imdb_rating"><span x-html="svg('star')"></span> <span x-text="it.meta && it.meta.imdb_rating"></span></span>
+            <template x-for="c in techChips(it)" :key="c.v">
+              <span class="chip tech-chip" :class="{warn: c.warn}" :title="c.warn ? t('audioWarn').replace('{c}', c.v) : ''"><span x-html="svg(c.ic)"></span> <span x-text="c.v"></span></span>
+            </template>
+          </div>
+          <div class="genres" x-show="it.meta && it.meta.genres" x-text="it.meta && it.meta.genres && it.meta.genres.join(' · ')"></div>
+
+          <p class="synopsis" x-show="it.meta && it.meta.description" x-text="it.meta && it.meta.description"></p>
+
+          <!-- custom video player (no native controls) so remuxed mkv/avi and native
+               mp4 share one look. For remux, the seek bar drives ?t=; for native
+               files it seeks the element directly. -->
+          <div class="preview-pane vplayer" x-show="videoOpen" x-transition style="display:none" @mousemove="playerPoke()" @touchstart="playerPoke()" :class="{'controls-hidden': !ctrlShow}">
+            <button class="vplayer-close" @click="stopVideo()" title="Cerrar">&times;</button>
+            <video x-ref="vplayer" class="vplayer-video" autoplay @mousemove="playerPoke()"
+                   @click="togglePlay()" @dblclick="toggleFullscreen()"
+                   @play="playing=true" @pause="playing=false"></video>
+            <!-- subtitles are parsed from VTT and painted here (native <track> is
+                 unreliable over a piped stream); works for mkv, mp4 and fullscreen -->
+            <div class="vplayer-subs" :class="{'sub-boxed': subCfg.boxed}"
+                 :style="`--sub-scale:${subCfg.scale}; --sub-color:${subCfg.color}`"
+                 x-show="subText" x-html="subText"></div>
+            <div class="vplayer-bar">
+              <!-- progress line: on desktop it sits inline; on mobile it becomes the
+                   full-width top row so the button row below keeps every control -->
+              <div class="vplayer-progress">
+                <span class="vplayer-time" x-text="fmtTime(seekVal)"></span>
+                <div class="vplayer-seek" x-ref="seekbox" @click="seekClick($event)">
+                  <div class="vplayer-seek-fill" :style="`width:${videoDur ? (seekVal/videoDur*100) : 0}%`"></div>
+                </div>
+                <span class="vplayer-time" x-text="videoDur ? fmtTime(videoDur) : '--:--'"></span>
+              </div>
+              <div class="vplayer-controls">
+              <button class="vplayer-btn" @click="togglePlay()" x-html="svg(playing ? 'pause' : 'play')"></button>
+              <!-- audio track selector (remux, when >1). Pass the value straight from
+                   the event — x-model + @change can fire before the model updates,
+                   which passed a stale index (the "works only sometimes" bug). -->
+              <select class="vplayer-sel" x-show="audioTracks.length > 1" @change="setAudio(+$event.target.value)" title="Audio">
+                <template x-for="a in audioTracks" :key="a.idx">
+                  <option :value="a.idx" x-text="trackLabel(audioTracks, a)" :selected="a.idx === audioSel"></option>
+                </template>
+              </select>
+              <!-- subtitle selector -->
+              <select class="vplayer-sel" x-show="subTracks.length" @change="setSub(+$event.target.value)" title="Subtítulos">
+                <option :value="-1" x-text="t('subsOff')" :selected="subSel === -1"></option>
+                <template x-for="s in subTracks" :key="s.idx">
+                  <option :value="s.idx" x-text="trackLabel(subTracks, s)" :selected="s.idx === subSel"></option>
+                </template>
+              </select>
+              <!-- subtitle appearance (size / colour / box) — shown when subs exist -->
+              <div class="subcfg-wrap" x-show="subTracks.length" @keydown.escape="subCfgOpen=false">
+                <button class="vplayer-btn" :class="{active: subCfgOpen}" @click="subCfgOpen = !subCfgOpen" x-html="svg('sliders')" :title="t('subStyle')"></button>
+                <div class="subcfg" x-show="subCfgOpen" @click.outside="subCfgOpen=false" x-transition style="display:none">
+                  <div class="subcfg-row">
+                    <span class="subcfg-lbl" x-text="t('subSize')"></span>
+                    <div class="subcfg-seg">
+                      <template x-for="s in subScales" :key="s[0]">
+                        <button :class="{active: subCfg.scale === s[1]}" @click="setSubScale(s[1])" x-text="s[0]"></button>
+                      </template>
+                    </div>
+                  </div>
+                  <div class="subcfg-row">
+                    <span class="subcfg-lbl" x-text="t('subColor')"></span>
+                    <div class="subcfg-swatches">
+                      <template x-for="c in subColors" :key="c">
+                        <button class="subcfg-swatch" :class="{active: subCfg.color === c}" :style="`background:${c}`" @click="setSubColor(c)"></button>
+                      </template>
+                    </div>
+                  </div>
+                  <div class="subcfg-row subcfg-toggle">
+                    <span class="subcfg-lbl" x-text="t('subBox')"></span>
+                    <button :class="{active: subCfg.boxed}" @click="toggleSubBox()" x-text="subCfg.boxed ? t('on') : t('off')"></button>
+                  </div>
+                </div>
+              </div>
+              <button class="vplayer-btn" @click="toggleFullscreen()" x-html="svg('fullscreen')" title="Pantalla completa"></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="preview-pane" x-show="previewing && previewType(it)" x-transition style="display:none">
+            <template x-if="previewType(it) === 'pdf'"><embed class="preview-pdf" :src="streamURL(it)" type="application/pdf"></template>
+            <template x-if="previewType(it) === 'audio'"><audio class="preview-audio" controls :src="streamURL(it)"></audio></template>
+            <template x-if="previewType(it) === 'image'"><img class="preview-img" :src="streamURL(it)" :alt="it.title"></template>
+          </div>
+
+          <dl class="facts">
+            <template x-if="it.meta && it.meta.director && it.meta.director.length">
+              <div class="fact"><dt><span x-html="svg('clapper')"></span> <span x-text="t('director')"></span></dt><dd x-text="it.meta.director.join(', ')"></dd></div>
+            </template>
+            <template x-if="it.meta && it.meta.cast && it.meta.cast.length">
+              <div class="fact"><dt><span x-html="svg('users')"></span> <span x-text="t('cast')"></span></dt><dd x-text="it.meta.cast.slice(0,8).join(', ')"></dd></div>
+            </template>
+            <div class="fact"><dt><span x-html="svg('folder')"></span> <span x-text="t('location')"></span></dt><dd class="mono" x-text="it.rel_path"></dd></div>
+            <template x-if="metaSource(it)">
+              <div class="fact"><dt><span x-html="svg('info')"></span> <span x-text="t('source')"></span></dt><dd x-text="metaSource(it)"></dd></div>
+            </template>
+          </dl>
+
+          <div class="edit-fields owner-only" x-show="!videoOpen">
+            <div class="identify" x-show="it.section !== 'files'">
+              <input class="id-input" x-model="it.imdb_id" :placeholder="idLabel(it.kind)" :readonly="!editId">
+              <button class="id-btn ghost" :class="{active: editId}" @click="editId = !editId" x-html="svg('edit')" :title="t('editId')"></button>
+              <a class="id-btn ghost" x-show="refURL(it.kind, it.imdb_id)" :href="refURL(it.kind, it.imdb_id)" target="_blank" rel="noopener" x-html="svg('external')" :title="t('openRef')"></a>
+              <button class="id-btn" @click="refetch(it)" :disabled="refetching" x-html="svg('refresh')" :title="t('update')"></button>
+            </div>
+            <div class="meta-edit">
+              <label><span class="field-label"><span x-html="svg('layers')"></span> <span x-text="t('section')"></span></span>
+                <select :value="it.section_source === 'manual' ? it.section : 'auto'" @change="setSection(it, $event.target.value)">
+                  <option value="auto" x-text="t('autoSection')"></option>
+                  <option value="movie" x-text="t('movieSection')"></option>
+                  <option value="series" x-text="t('seriesSection')"></option>
+                  <option value="music" x-text="t('musicSection')"></option>
+                  <option value="book" x-text="t('bookSection')"></option>
+                  <option value="files" x-text="t('filesSection')"></option>
+                </select>
+              </label>
+              <label><span class="field-label"><span x-html="svg('tag')"></span> <span x-text="t('title')"></span></span><input x-model="it.title" @change="save(it)"></label>
+              <!-- descriptive fields only apply to real media, not generic files -->
+              <label x-show="it.section !== 'files'"><span class="field-label"><span x-html="svg('clapper')"></span> <span x-text="t('fYear')"></span></span>
+                <input type="number" x-model="it.year" @change="save(it)" placeholder="—"></label>
+              <label x-show="it.section !== 'files'"><span class="field-label"><span x-html="svg('users')"></span> <span x-text="metaLabel('artist', it.kind)"></span></span>
+                <input x-model="it.artist" @change="save(it)" placeholder="—"></label>
+              <label x-show="it.section !== 'files'"><span class="field-label"><span x-html="svg('layers')"></span> <span x-text="metaLabel('album', it.kind)"></span></span>
+                <input x-model="it.album" @change="save(it)" placeholder="—"></label>
+              <label x-show="it.section !== 'files'"><span class="field-label"><span x-html="svg('tag')"></span> <span x-text="t('fGenre')"></span></span>
+                <input x-model="it.genre" @change="save(it)" placeholder="—"></label>
+            </div>
+            <label class="full"><span class="field-label"><span x-html="svg('info')"></span> <span x-text="t('notes')"></span></span><textarea x-model="it.notes" @change="save(it)" rows="3"></textarea></label>
+            <label class="full"><span class="field-label"><span x-html="svg('star')"></span> <span x-text="t('rating')"></span></span>
+              <div class="stars">
+                <template x-for="n in 5" :key="n">
+                  <span tabindex="0" role="button" @click="it.rating = n; save(it)" @keydown.enter.prevent="it.rating = n; save(it)" x-text="n <= it.rating ? '★' : '☆'"></span>
+                </template>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </template>
+  </main>
+
+  <main class="watch" x-show="tab === 'watch' && top.view === 'home' && !searching()" style="display:none">
+    <div class="watch-bar owner-only">
+      <form class="watch-search" @submit.prevent="wresults.length ? pickWatch(wresults[0]) : addManual()">
+        <span class="search-ic" x-html="svg('search')"></span>
+        <input x-model="wq" @input.debounce.400ms="searchWatch()" :placeholder="t('watchSearchPlaceholder')">
+      </form>
+      <div class="watch-types">
+        <template x-for="k in allWatchKinds" :key="k">
+          <button type="button" class="wt-chip" :class="{on: kindOn(k), noapi: !onlineKinds.includes(k)}"
+                  @click="toggleKind(k)" :title="onlineKinds.includes(k) ? '' : t('manualOnly')">
+            <span x-html="watchIcon(k)"></span> <span x-text="t(k)"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <div class="watch-results owner-only" x-show="wresults.length" style="display:none">
+      <template x-for="(h, i) in wresults" :key="i">
+        <button class="wr" @click="pickWatch(h)">
+          <div class="wr-poster" :style="h.poster ? `background-image:url(${h.poster})` : ''">
+            <template x-if="!h.poster"><span class="wr-fb" x-html="watchIcon(h.kind)"></span></template>
+          </div>
+          <div class="wr-info">
+            <div class="wr-ttl" x-text="h.title"></div>
+            <div class="wr-sub"><span x-html="watchIcon(h.kind)"></span> <span x-text="[t(h.kind), h.year].filter(Boolean).join(' · ')"></span></div>
+          </div>
+          <span class="wr-add" x-html="svg('plus')"></span>
+        </button>
+      </template>
+    </div>
+
+    <div class="watch-manual-row owner-only" x-show="wq.trim() && !wsearching" style="display:none">
+      <input class="wm-note" x-model="newWatchNote" :placeholder="t('notes')">
+      <button type="button" class="wm-submit" @click="addManual()">
+        <span x-html="svg('plus')"></span>
+        <span x-text="t('addAsType').replace('{type}', t(manualKind()))"></span>
+      </button>
+    </div>
+
+    <p class="empty" x-show="!watch.length && !wresults.length && !wq.trim()" x-text="t('watchEmpty')"></p>
+
+    <div class="grid" x-show="watch.length">
+      <template x-for="w in watch" :key="w.id">
+        <div class="item" :class="{'watch-done': w.done}" tabindex="0" role="button" @click="openWatch(w)" @keydown.enter.prevent="openWatch(w)">
+          <div class="case">
+            <div class="art" :style="w.poster ? `background-image:url(${w.poster})` : 'display:none'"></div>
+            <template x-if="!w.poster">
+              <div class="fallback"><span class="fb-ic" x-html="watchIcon(w.kind)"></span><span class="fb-ttl" x-text="w.title"></span></div>
+            </template>
+            <span class="watch-check" x-show="w.done" x-html="svg('star')"></span>
+          </div>
+          <div class="meta"><div class="m-ttl" x-text="w.title"></div><div class="m-sub" x-text="[t(w.kind), w.year].filter(Boolean).join(' · ')"></div></div>
+        </div>
+      </template>
+    </div>
+  </main>
+
+  <main x-show="top.view === 'watchitem' && !searching()">
+    <template x-if="top.watch">
+      <div class="detail" x-data="{ w: top.watch }">
+        <div class="detail-aside">
+          <div class="big-case">
+            <div class="art" :style="w.poster ? `background-image:url(${w.poster})` : 'display:none'"></div>
+            <template x-if="!w.poster">
+              <div class="fallback"><span class="fb-ic" x-html="watchIcon(w.kind)"></span><span class="fb-ttl" x-text="w.title"></span></div>
+            </template>
+            <div class="cover-edit owner-only">
+              <button @click="$refs.wcover.click()" :title="t('changeCover')"><span x-html="svg('palette')"></span></button>
+              <button @click="setWatchPosterURL(w)" :title="t('coverFromUrl')"><span x-html="svg('external')"></span></button>
+            </div>
+            <input type="file" x-ref="wcover" accept="image/*" style="display:none" @change="uploadWatchCover(w, $event)">
+          </div>
+          <div class="actions">
+            <button class="action primary" @click="toggle(w); w.done = !w.done">
+              <span x-html="svg(w.done ? 'refresh' : 'star')"></span>
+              <span x-text="w.done ? t('markUndone') : t('markDone')"></span>
+            </button>
+            <button class="action owner-only" @click="delWatch(w); back()"><span x-html="svg('trash')"></span> <span x-text="t('remove')"></span></button>
+          </div>
+        </div>
+
+        <div class="detail-main">
+          <h1 x-text="w.title"></h1>
+          <div class="chips">
+            <span class="chip"><span x-html="watchIcon(w.kind)"></span> <span x-text="t(w.kind)"></span></span>
+            <span class="chip" x-show="w.year"><span x-html="svg('clapper')"></span> <span x-text="w.year"></span></span>
+            <span class="chip" x-show="w.done"><span x-html="svg('star')"></span> <span x-text="t('watchedDone')"></span></span>
+          </div>
+          <label class="owner-only full"><span class="field-label"><span x-html="svg('info')"></span> <span x-text="t('notes')"></span></span>
+            <textarea x-model="w.note" @change="saveWatchNote(w)" rows="3"></textarea>
+          </label>
+
+          <div class="wfields">
+            <div class="wfields-head owner-only">
+              <span class="field-label"><span x-html="svg('layers')"></span> <span x-text="t('customFields')"></span></span>
+              <button class="wfield-add" @click="addWatchField(w)"><span x-html="svg('plus')"></span> <span x-text="t('addField')"></span></button>
+            </div>
+            <template x-for="(fld, i) in (w.fields || [])" :key="i">
+              <div class="wfield">
+                <template x-if="info.owner !== false">
+                  <div style="display:contents">
+                    <input class="wfield-k" x-model="fld.k" @change="saveWatchFields(w)" :placeholder="t('fieldName')">
+                    <input class="wfield-v" x-model="fld.v" @change="saveWatchFields(w)" :placeholder="t('fieldValue')">
+                    <button class="wfield-del" @click="removeWatchField(w, i)" x-html="svg('trash')"></button>
+                  </div>
+                </template>
+                <template x-if="info.owner === false">
+                  <div class="wfield-ro"><span class="wfield-rok" x-text="fld.k"></span><span x-text="fld.v"></span></div>
+                </template>
+              </div>
+            </template>
+          </div>
+
+          <p class="synopsis" x-show="w.note && info.owner === false" x-text="w.note"></p>
+        </div>
+      </div>
+    </template>
+  </main>
+
+  <div class="modal-bg" x-show="connectOpen" @click="connectOpen=false" x-transition style="display:none">
+    <div class="modal" @click.stop>
+      <div class="modal-head">
+        <h2><span x-html="svg('share')"></span> <span x-text="t('connect')"></span></h2>
+        <button class="icon-btn" @click="connectOpen=false" x-html="svg('back')"></button>
+      </div>
+      <div class="conn-tabs">
+        <button :class="{on: connTab==='local'}" @click="connTab='local'"><span x-html="svg('laptop')"></span> <span x-text="t('tabLocal')"></span></button>
+        <button class="owner-only" :class="{on: connTab==='internet'}" @click="connTab='internet'"><span x-html="svg('share')"></span> <span x-text="t('tabInternet')"></span></button>
+      </div>
+
+      <div class="connect-body">
+        <div x-show="connTab==='local'">
+          <div class="qr-box">
+            <img class="qr-img" :src="'/api/qr?t=' + qrBust" :alt="t('connect')">
+          </div>
+          <a class="connect-url" :href="connBase" target="_blank" rel="noopener" x-text="connBase"></a>
+
+          <div class="devices">
+            <div class="devices-head"><span x-text="t('devices')"></span><span class="count" x-text="clients.length"></span></div>
+            <template x-for="c in clients" :key="c.ip">
+              <div class="device">
+                <span class="dev-ic" x-html="svg(deviceIcon(c.agent))"></span>
+                <div class="dev-info">
+                  <div class="dev-ip"><span x-text="c.ip"></span> <span class="dev-self" x-show="c.self" x-text="t('thisDevice')"></span></div>
+                  <div class="dev-ua" x-text="deviceName(c.agent)"></div>
+                </div>
+                <span class="dev-seen" x-text="agoLabel(c.last_at)"></span>
+              </div>
+            </template>
+            <p class="empty" x-show="!clients.length" x-text="t('noDevices')"></p>
+          </div>
+        </div>
+
+        <div class="tunnel owner-only" x-show="connTab==='internet'">
+          <template x-if="!tun.running">
+            <button class="tunnel-btn" @click="startTunnel()" :disabled="tunBusy">
+              <span class="spin" x-show="tunBusy" x-html="svg('refresh')"></span>
+              <span x-show="!tunBusy" x-html="svg('share')"></span>
+              <span x-text="tunBusy ? t('tunnelStarting') : t('tunnelStart')"></span>
+            </button>
+          </template>
+
+          <template x-if="tun.running">
+            <div>
+              <div class="tunnel-preparing" x-show="!tun.url && !tun.error">
+                <span class="spin" x-html="svg('refresh')"></span>
+                <span x-text="t('tunnelStarting')"></span>
+              </div>
+
+              <div class="tunnel-err" x-show="tun.error">
+                <span x-html="svg('alert')"></span>
+                <span x-text="tun.error"></span>
+              </div>
+
+              <div class="tunnel-live" x-show="tun.url">
+                <div class="qr-box"><img class="qr-img" :src="'/api/qr?url=' + encodeURIComponent(tun.url) + '&t=' + qrBust"></div>
+                <div class="mcp-copy">
+                  <code x-text="tun.url"></code>
+                  <button @click="copyText(tun.url, 'tun')" :title="t('copy')" x-html="svg(mcpCopied==='tun' ? 'star' : 'copy')"></button>
+                </div>
+              </div>
+
+              <button class="tunnel-btn stop" @click="stopTunnel()"><span x-html="svg('stop')"></span> <span x-text="t('tunnelStop')"></span></button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-bg" x-show="mcpOpen" @click="mcpOpen=false" x-transition style="display:none">
+    <div class="modal" @click.stop>
+      <div class="modal-head">
+        <h2><span x-html="svg('plug')"></span> <span x-text="t('mcpConnect')"></span></h2>
+        <button class="icon-btn" @click="mcpOpen=false" x-html="svg('back')"></button>
+      </div>
+      <div class="connect-body">
+        <p class="connect-hint" style="text-align:left" x-text="t('mcpIntro')"></p>
+
+        <div class="mcp-field">
+          <label x-text="t('mcpUrl')"></label>
+          <div class="mcp-copy"><code x-text="mcpURL()"></code><button @click="copyText(mcpURL(),'url')" x-html="svg(mcpCopied==='url'?'star':'copy')"></button></div>
+        </div>
+
+        <div class="mcp-field">
+          <label x-text="t('mcpCli')"></label>
+          <div class="mcp-copy"><code x-text="mcpCli()"></code><button @click="copyText(mcpCli(),'cli')" x-html="svg(mcpCopied==='cli'?'star':'copy')"></button></div>
+        </div>
+
+        <div class="mcp-field">
+          <label>claude_desktop_config.json</label>
+          <div class="mcp-copy"><code class="mcp-json" x-text="mcpJson()"></code><button @click="copyText(mcpJson(),'json')" x-html="svg(mcpCopied==='json'?'star':'copy')"></button></div>
+        </div>
+
+        <p class="connect-hint" style="text-align:left" x-text="t('mcpTools')"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-bg" x-show="aboutOpen" @click="aboutOpen=false" x-transition style="display:none">
+    <div class="modal" @click.stop>
+      <div class="modal-head">
+        <h2><span x-html="svg('info')"></span> <span x-text="t('about')"></span></h2>
+        <button class="icon-btn" @click="aboutOpen=false" x-html="svg('back')"></button>
+      </div>
+      <div class="connect-body about">
+        <div class="about-brand">
+          <span class="brand-logo about-logo"></span>
+          <div>
+            <div class="about-name">Gobby</div>
+            <div class="about-ver">v<span x-text="info.version || '—'"></span></div>
+          </div>
+        </div>
+        <a class="about-repo" href="https://github.com/danijerez/Gobby" target="_blank" rel="noopener"><span x-html="svg('github')"></span> github.com/danijerez/Gobby</a>
+
+        <div class="about-update" x-show="info.owner">
+          <button class="tunnel-btn stop" x-show="upd.state === 'idle' || upd.state === 'error'" @click="checkUpdate()" x-text="t('updCheck')"></button>
+          <span x-show="upd.state === 'checking'" class="upd-msg" x-text="t('updChecking')"></span>
+          <span x-show="upd.state === 'latest'" class="upd-msg upd-ok" x-text="t('updLatest')"></span>
+          <button class="tunnel-btn" x-show="upd.state === 'available'" @click="applyUpdate()" x-text="t('updNew').replace('{v}', upd.latest)"></button>
+          <span x-show="upd.state === 'applying'" class="upd-msg" x-text="t('updApplying')"></span>
+          <span x-show="upd.state === 'done'" class="upd-msg upd-ok" x-text="t('updDone')"></span>
+          <span x-show="upd.state === 'error'" class="upd-msg upd-err" x-text="upd.msg"></span>
+        </div>
+
+        <div class="about-sec">
+          <div class="about-sec-title" x-text="t('aboutDeps')"></div>
+          <ul class="about-list">
+            <li><a href="https://go.dev" target="_blank" rel="noopener">Go</a><span x-text="t('dServer')"></span></li>
+            <li><a href="https://alpinejs.dev" target="_blank" rel="noopener">Alpine.js</a><span x-text="t('dUI')"></span></li>
+            <li><a href="https://github.com/Danilaa1/cuelume" target="_blank" rel="noopener">cuelume</a><span x-text="t('dSound')"></span></li>
+            <li><a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">MCP Go SDK</a><span x-text="t('dMcp')"></span></li>
+            <li><a href="https://pkg.go.dev/modernc.org/sqlite" target="_blank" rel="noopener">modernc.org/sqlite</a><span x-text="t('dDb')"></span></li>
+            <li><a href="https://github.com/dhowden/tag" target="_blank" rel="noopener">dhowden/tag</a><span x-text="t('dTags')"></span></li>
+            <li><a href="https://pkg.go.dev/rsc.io/qr" target="_blank" rel="noopener">rsc.io/qr</a><span x-text="t('dQr')"></span></li>
+            <li><a href="https://ffmpeg.org" target="_blank" rel="noopener">ffmpeg</a><span x-text="t('dFfmpeg')"></span></li>
+          </ul>
+        </div>
+
+        <div class="about-sec">
+          <div class="about-sec-title" x-text="t('aboutApis')"></div>
+          <ul class="about-list">
+            <li><a href="https://www.stremio.com/" target="_blank" rel="noopener">Cinemeta</a><span x-text="t('aMovies')"></span></li>
+            <li><a href="https://openlibrary.org" target="_blank" rel="noopener">Open Library</a><span x-text="t('aBooks')"></span></li>
+            <li><a href="https://musicbrainz.org" target="_blank" rel="noopener">MusicBrainz</a><span x-text="t('aMusic')"></span></li>
+            <li><a href="https://coverartarchive.org" target="_blank" rel="noopener">Cover Art Archive</a><span x-text="t('aMusicCovers')"></span></li>
+            <li><a href="https://www.cheapshark.com" target="_blank" rel="noopener">CheapShark</a><span x-text="t('aGames')"></span></li>
+            <li><a href="https://www.apple.com/itunes/" target="_blank" rel="noopener">iTunes Search</a><span x-text="t('aFallback')"></span></li>
+            <li><a href="https://www.cloudflare.com/products/tunnel/" target="_blank" rel="noopener">Cloudflare Tunnel</a><span x-text="t('aRemote')"></span></li>
+            <li><a href="https://developers.google.com/cast" target="_blank" rel="noopener">Google Cast</a><span x-text="t('aCast')"></span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
