@@ -43,12 +43,26 @@ function gobby() {
       return c;
     },
     removeChip(k) {
-      this.filters[k] = '';
+      this.filters[k === 'rating' ? 'rating_min' : k] = '';
       this.load();
     },
     clearFilters() {
       this.filters = { ext: '', year: '', cover: '', rating_min: '', genre: '' };
       this.load();
+    },
+    // Home shelves come from /api/home (no server filters), so apply the active
+    // filters client-side there — otherwise the funnel does nothing on Home.
+    applyFilters(arr) {
+      const f = this.filters;
+      return (arr || []).filter(it => {
+        if (f.ext && !(it.rel_path || '').toLowerCase().endsWith('.' + f.ext)) return false;
+        if (f.year && String(it.year) !== String(f.year)) return false;
+        if (f.cover === 'with' && !it.has_cover) return false;
+        if (f.cover === 'without' && it.has_cover) return false;
+        if (f.rating_min && (it.rating || 0) < +f.rating_min) return false;
+        if (f.genre && !((it.genre || '').toLowerCase().includes(f.genre.toLowerCase()))) return false;
+        return true;
+      });
     },
 
     menuOpen: false, // header overflow menu (cover fetching)
@@ -89,6 +103,8 @@ function gobby() {
         season: 'Temporada', otherEps: 'Otros', mArtist: 'Artista', mAuthor: 'Autor', mSeries: 'Serie', mAlbum: 'Álbum', mCollection: 'Colección',
         changeFolder: 'Cambiar carpeta', exportDb: 'Exportar base de datos', importDb: 'Importar base de datos',
         folderPrompt: 'Ruta de la carpeta a escanear:', importConfirm: 'Reinicia Gobby para cargar la base importada.',
+        libraries: 'Bibliotecas', view: 'Ver', viewing: 'Viendo', rebind: 'Usar esta carpeta', rebindHint: 'Re-vincular esta biblioteca a la carpeta donde está Gobby ahora', rebindConfirm: '¿Re-vincular esta biblioteca a la carpeta actual de Gobby?', unreachable: 'no accesible', unavailable: 'No disponible', unavailableNote: 'Este elemento no es accesible ahora mismo (fichero movido o unidad desconectada).', importMerged: 'Importadas {n} biblioteca(s).', importNone: 'Nada nuevo que importar.',
+        offlineTitle: 'Gobby se ha ido a casa', offlineSub: 'El pequeño elfo cerró el servidor. Vuelve a abrir Gobby para seguir. 🧦',
         clearFilters: 'Limpiar filtros',
         connect: 'Conectar dispositivos',
         devices: 'Dispositivos conectados', thisDevice: 'este dispositivo', noDevices: 'Ningún dispositivo aún.', now: 'ahora',
@@ -131,6 +147,8 @@ function gobby() {
         season: 'Season', otherEps: 'Other', mArtist: 'Artist', mAuthor: 'Author', mSeries: 'Series', mAlbum: 'Album', mCollection: 'Collection',
         changeFolder: 'Change folder', exportDb: 'Export database', importDb: 'Import database',
         folderPrompt: 'Path of the folder to scan:', importConfirm: 'Restart Gobby to load the imported database.',
+        libraries: 'Libraries', view: 'View', viewing: 'Viewing', rebind: 'Use this folder', rebindHint: 'Re-point this library to the folder Gobby is in now', rebindConfirm: 'Re-point this library to Gobby’s current folder?', unreachable: 'unreachable', unavailable: 'Unavailable', unavailableNote: 'This item is not reachable right now (file moved or drive disconnected).', importMerged: 'Imported {n} library(ies).', importNone: 'Nothing new to import.',
+        offlineTitle: 'Gobby has gone home', offlineSub: 'The little elf shut the server down. Open Gobby again to carry on. 🧦',
         clearFilters: 'Clear filters',
         connect: 'Connect devices',
         devices: 'Connected devices', thisDevice: 'this device', noDevices: 'No devices yet.', now: 'now',
@@ -173,6 +191,8 @@ function gobby() {
         season: 'Saison', otherEps: 'Autres', mArtist: 'Artiste', mAuthor: 'Auteur', mSeries: 'Série', mAlbum: 'Album', mCollection: 'Collection',
         changeFolder: 'Changer de dossier', exportDb: 'Exporter la base', importDb: 'Importer une base',
         folderPrompt: 'Chemin du dossier à analyser :', importConfirm: 'Redémarrez Gobby pour charger la base importée.',
+        libraries: 'Bibliothèques', view: 'Voir', viewing: 'Affichée', rebind: 'Utiliser ce dossier', rebindHint: 'Ré-associer cette bibliothèque au dossier où se trouve Gobby maintenant', rebindConfirm: 'Ré-associer cette bibliothèque au dossier actuel de Gobby ?', unreachable: 'inaccessible', unavailable: 'Indisponible', unavailableNote: "Cet élément n'est pas accessible pour le moment (fichier déplacé ou disque déconnecté).", importMerged: '{n} bibliothèque(s) importée(s).', importNone: 'Rien de nouveau à importer.',
+        offlineTitle: 'Gobby est rentré chez lui', offlineSub: 'Le petit elfe a éteint le serveur. Rouvre Gobby pour continuer. 🧦',
         clearFilters: 'Effacer les filtres',
         connect: 'Connecter des appareils',
         devices: 'Appareils connectés', thisDevice: 'cet appareil', noDevices: 'Aucun appareil pour le moment.', now: 'maintenant',
@@ -215,6 +235,8 @@ function gobby() {
         season: 'Staffel', otherEps: 'Andere', mArtist: 'Künstler', mAuthor: 'Autor', mSeries: 'Serie', mAlbum: 'Album', mCollection: 'Sammlung',
         changeFolder: 'Ordner wechseln', exportDb: 'Datenbank exportieren', importDb: 'Datenbank importieren',
         folderPrompt: 'Pfad des zu scannenden Ordners:', importConfirm: 'Starte Gobby neu, um die importierte Datenbank zu laden.',
+        libraries: 'Bibliotheken', view: 'Ansehen', viewing: 'Aktiv', rebind: 'Diesen Ordner verwenden', rebindHint: 'Diese Bibliothek mit dem aktuellen Gobby-Ordner verknüpfen', rebindConfirm: 'Diese Bibliothek mit Gobbys aktuellem Ordner verknüpfen?', unreachable: 'nicht erreichbar', unavailable: 'Nicht verfügbar', unavailableNote: 'Dieses Element ist gerade nicht erreichbar (Datei verschoben oder Laufwerk getrennt).', importMerged: '{n} Bibliothek(en) importiert.', importNone: 'Nichts Neues zu importieren.',
+        offlineTitle: 'Gobby ist nach Hause gegangen', offlineSub: 'Der kleine Elf hat den Server beendet. Öffne Gobby erneut, um weiterzumachen. 🧦',
         clearFilters: 'Filter löschen',
         connect: 'Geräte verbinden',
         devices: 'Verbundene Geräte', thisDevice: 'dieses Gerät', noDevices: 'Noch keine Geräte.', now: 'jetzt',
@@ -257,6 +279,8 @@ function gobby() {
         season: 'Stagione', otherEps: 'Altri', mArtist: 'Artista', mAuthor: 'Autore', mSeries: 'Serie', mAlbum: 'Album', mCollection: 'Raccolta',
         changeFolder: 'Cambia cartella', exportDb: 'Esporta database', importDb: 'Importa database',
         folderPrompt: 'Percorso della cartella da scansionare:', importConfirm: 'Riavvia Gobby per caricare il database importato.',
+        libraries: 'Librerie', view: 'Vedi', viewing: 'In uso', rebind: 'Usa questa cartella', rebindHint: 'Ri-collega questa libreria alla cartella in cui si trova Gobby ora', rebindConfirm: 'Ri-collegare questa libreria alla cartella attuale di Gobby?', unreachable: 'non accessibile', unavailable: 'Non disponibile', unavailableNote: 'Questo elemento non è accessibile al momento (file spostato o unità disconnessa).', importMerged: 'Importate {n} libreria/e.', importNone: 'Niente di nuovo da importare.',
+        offlineTitle: 'Gobby è tornato a casa', offlineSub: 'Il piccolo elfo ha spento il server. Riapri Gobby per continuare. 🧦',
         clearFilters: 'Pulisci filtri',
         connect: 'Connetti dispositivi',
         devices: 'Dispositivi connessi', thisDevice: 'questo dispositivo', noDevices: 'Ancora nessun dispositivo.', now: 'ora',
@@ -299,6 +323,8 @@ function gobby() {
         season: 'Temporada', otherEps: 'Outros', mArtist: 'Artista', mAuthor: 'Autor', mSeries: 'Série', mAlbum: 'Álbum', mCollection: 'Coleção',
         changeFolder: 'Mudar pasta', exportDb: 'Exportar base de dados', importDb: 'Importar base de dados',
         folderPrompt: 'Caminho da pasta a analisar:', importConfirm: 'Reinicie o Gobby para carregar a base importada.',
+        libraries: 'Bibliotecas', view: 'Ver', viewing: 'A ver', rebind: 'Usar esta pasta', rebindHint: 'Voltar a associar esta biblioteca à pasta onde o Gobby está agora', rebindConfirm: 'Voltar a associar esta biblioteca à pasta atual do Gobby?', unreachable: 'inacessível', unavailable: 'Indisponível', unavailableNote: 'Este item não está acessível de momento (ficheiro movido ou unidade desligada).', importMerged: 'Importadas {n} biblioteca(s).', importNone: 'Nada de novo para importar.',
+        offlineTitle: 'O Gobby foi para casa', offlineSub: 'O pequeno elfo desligou o servidor. Volta a abrir o Gobby para continuar. 🧦',
         clearFilters: 'Limpar filtros',
         connect: 'Ligar dispositivos',
         devices: 'Dispositivos ligados', thisDevice: 'este dispositivo', noDevices: 'Ainda sem dispositivos.', now: 'agora',
@@ -313,8 +339,7 @@ function gobby() {
         aMovies: 'filmes e séries', aBooks: 'livros', aMusic: 'música', aMusicCovers: 'capas de música', aGames: 'jogos', aFallback: 'capas alternativas', aRemote: 'acesso remoto', aCast: 'transmitir para TV',
       },
     },
-    // Order the language button cycles through. English falls back for any key a
-    // translation forgot, so a missing string shows readable text, never the raw key.
+    // supported languages; English is the fallback for any missing key
     langs: ['es', 'en', 'fr', 'de', 'it', 'pt'],
     t(key) { return (this.strings[this.lang] && this.strings[this.lang][key]) || this.strings.en[key] || key; },
 
@@ -337,6 +362,32 @@ function gobby() {
       this.loadSubCfg();
       this.openFromHash(); // deep-link: #item/<id> opens that item on load
       window.addEventListener('hashchange', () => this.openFromHash());
+      this.watchBackend();
+    },
+
+    // A cached page keeps working after the server dies, which is misleading —
+    // clicks do nothing and playback 404s. Ping the backend; when it's gone, throw
+    // up a blocking "Gobby left" curtain (once, with the error cue) until it's back.
+    offline: false,
+    offlinePoke: false,
+    watchBackend() {
+      const ping = async () => {
+        try {
+          const r = await fetch('/api/info', { cache: 'no-store' });
+          if (!r.ok) throw 0;
+          if (this.offline) { this.offline = false; this.loadInfo(); } // came back
+        } catch (e) {
+          this.offline = true;
+        }
+      };
+      setInterval(ping, 4000);
+    },
+    // wobble + error cue only when the user pokes the logo, not on its own
+    pokeOffline() {
+      if (this.soundOn && window.cuelume) window.cuelume.play('error');
+      this.offlinePoke = true;
+      clearTimeout(this._pokeT);
+      this._pokeT = setTimeout(() => { this.offlinePoke = false; }, 700);
     },
     // Open the item named in the URL hash (#item/<id>), so a shared link lands
     // directly on it. Silently ignores a stale/unknown id.
@@ -501,6 +552,7 @@ function gobby() {
       });
       if (!r.ok) { alert(await r.text()); return; }
       // repoint + rescan happen server-side; reset the UI and poll for the rescan
+      this.libOpen = false;
       this.stack = [{ view: 'home' }]; this.tab = 'home';
       this.loadInfo(); this.loadHome(); this.pollProgress();
     },
@@ -511,8 +563,40 @@ function gobby() {
       if (!f) return;
       const r = await fetch('/api/db/import', { method: 'POST', body: f });
       ev.target.value = '';
-      if (r.ok) alert(this.t('importConfirm'));
-      else alert(await r.text());
+      if (!r.ok) { alert(await r.text()); return; }
+      const res = await r.json();
+      const n = (res.added || []).length;
+      alert(n ? this.t('importMerged').replace('{n}', n) : this.t('importNone'));
+      this.loadLibraries();
+    },
+
+    // library switcher
+    libOpen: false,
+    libraries: [],
+    async loadLibraries() {
+      try { this.libraries = await (await fetch('/api/libraries')).json() || []; } catch (e) { this.libraries = []; }
+    },
+    openLibraries() { this.libOpen = true; this.loadLibraries(); },
+    async switchLibrary(key) {
+      const r = await fetch('/api/library/switch', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key }),
+      });
+      if (!r.ok) { alert(await r.text()); return; }
+      this.libOpen = false;
+      this.stack = [{ view: 'home' }]; this.tab = 'home';
+      this.loadInfo(); this.loadHome(); this.pollProgress();
+    },
+    async rebindLibrary(key) {
+      if (!confirm(this.t('rebindConfirm'))) return;
+      const r = await fetch('/api/library/rebind', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key }),
+      });
+      if (!r.ok) { alert(await r.text()); return; }
+      this.libOpen = false;
+      this.stack = [{ view: 'home' }]; this.tab = 'home';
+      this.loadInfo(); this.loadHome(); this.pollProgress();
     },
 
     toggleTheme() {
@@ -520,6 +604,7 @@ function gobby() {
       localStorage.setItem('gobby-theme', this.theme);
       document.documentElement.setAttribute('data-theme', this.theme);
     },
+    langOpen: false,
     langNames: { es: 'Español', en: 'English', fr: 'Français', de: 'Deutsch', it: 'Italiano', pt: 'Português' },
     langName(l) { return this.langNames[l] || l.toUpperCase(); },
     setLang(l) {
@@ -540,6 +625,7 @@ function gobby() {
         bookmark: '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/>',
         back: '<path d="m12 19-7-7 7-7M19 12H5"/>',
         check: '<path d="M20 6 9 17l-5-5"/>',
+        close: '<path d="M18 6 6 18M6 6l12 12"/>',
         gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>',
         refresh: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
         folder: '<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9L9.6 3.9A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
@@ -599,6 +685,17 @@ function gobby() {
     looseLabel() { return this.t({ movie: 'movies', audio: 'singles', book: 'books', files: 'looseFiles' }[this.tab] || 'singles'); },
     groupUnit() { return this.t({ series: 'episodes', audio: 'tracks', book: 'books', files: 'filesUnit' }[this.tab] || 'episodes'); },
     // format filter options depend on the media kind of the current tab
+    // Years present in the library, newest first. Falls back to a sensible recent
+    // range if the library reports none yet.
+    yearOptions() {
+      const now = new Date().getFullYear();
+      let hi = this.info.yearMax || now;
+      let lo = this.info.yearMin || (now - 40);
+      if (hi < lo) hi = lo;
+      const out = [];
+      for (let y = hi; y >= lo; y--) out.push(y);
+      return out;
+    },
     formatOptions() {
       return {
         series: ['mkv', 'mp4', 'avi'], movie: ['mkv', 'mp4', 'avi', 'm4v'],
@@ -731,6 +828,7 @@ function gobby() {
     pages() { return Math.max(1, Math.ceil(this.looseTotal / this.pageSize)); },
     async load(resetPage = true) {
       if (this.tab === 'files') { this.goFiles(); return; }
+      if (this.tab === 'home') return; // home shelves filter client-side (see applyFilters)
       if (resetPage) this.page = 1;
       const fq = this.filterQS();
       const r = await fetch(`/api/browse?kind=${this.tab}&q=${encodeURIComponent(this.q)}&page=${this.page}${fq ? '&' + fq : ''}`);
@@ -1119,8 +1217,7 @@ function gobby() {
       }
       return cues;
     },
-    // pick the cue covering time t and show it (newlines → <br>). Wrapped in a
-    // <span> so the optional "boxed" background hugs the text, not the full width.
+    // show the cue at time t (wrapped in <span> so the boxed bg hugs the text)
     _updateSub(t) {
       if (!this._cues || !this._cues.length) { if (this.subText) this.subText = ''; return; }
       const c = this._cues.find(c => t >= c.start && t <= c.end);
@@ -1175,9 +1272,7 @@ function gobby() {
     },
     // stop and unload the player (leaving the detail, switching item, close button).
     stopVideo() {
-      // Closing while fullscreen must drop out of it first — otherwise the browser
-      // stays fullscreen on the now-hidden player, leaving its own exit chrome on
-      // screen and swallowing clicks (the "X does nothing / app frozen" bug).
+      // exit fullscreen first, else the browser stays FS on the hidden player and freezes clicks
       if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) {} }
       const v = this.$refs && this.$refs.vplayer;
       clearInterval(this._tick);

@@ -46,8 +46,8 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
-  /* room for the fixed bottom-nav on mobile (0 elsewhere); respects notches */
-  padding-bottom: calc(var(--bottomnav, 0px) + env(safe-area-inset-bottom, 0px));
+  /* room for the fixed footer + (on mobile) the bottom-nav; respects notches */
+  padding-bottom: calc(var(--bottomnav, 0px) + var(--footer-h, 42px) + env(safe-area-inset-bottom, 0px));
 }
 
 header {
@@ -56,7 +56,6 @@ header {
   padding: 14px 22px;
   background: color-mix(in srgb, var(--bg) 82%, transparent);
   backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: .5px; background: none; border: 0; cursor: pointer; padding: 0; }
 /* logo: mask the svg silhouette and fill it with --text, so it's dark on the
@@ -79,8 +78,23 @@ header {
 @keyframes brand-hop { 0%,100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }
 .ic { width: 18px; height: 18px; display: block; }
 /* collapsed: a pill that reads as a search box ("🔍 Buscar…"); expanded: full field */
-.search-wrap { display: flex; align-items: center; flex: 1; min-width: 0; }
-.search-wrap.open { max-width: 440px; }
+/* collapsed: shrink to content so the funnel hugs the search pill (not pushed to
+   the far right). Expanded: grow to a real field. */
+.search-wrap { display: flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0; }
+.search-wrap.open { flex: 1; max-width: 480px; }
+/* funnel sits right next to the search pill, same round style */
+.search-wrap .filter-btn {
+  flex: none; width: 34px; height: 34px; display: grid; place-items: center; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); color: var(--muted); border-radius: 50%;
+  transition: border-color .12s, color .12s;
+}
+.search-wrap .filter-btn:hover, .search-wrap .filter-btn.active { border-color: var(--accent); color: var(--text); }
+.search-wrap .filter-btn .ic { width: 16px; height: 16px; }
+.search-wrap .filter-btn.has-filters { position: relative; }
+.search-wrap .filter-btn.has-filters::after {
+  content: ""; position: absolute; top: 4px; right: 4px; width: 7px; height: 7px;
+  border-radius: 50%; background: var(--accent);
+}
 .search-toggle {
   display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
   background: var(--surface); border: 1px solid var(--line); color: var(--muted);
@@ -132,23 +146,14 @@ a.icon-btn { text-decoration: none; }
   background: none; border: 0; color: var(--text); cursor: pointer; text-decoration: none;
   padding: 10px 12px; border-radius: 8px; font-size: 14px;
 }
-.menu button:hover, .menu .menu-link:hover { background: var(--surface-2); }
-.menu button .ic, .menu .menu-link .ic { width: 17px; height: 17px; color: var(--muted); }
+.menu button:hover { background: var(--surface-2); }
+.menu button .ic { width: 17px; height: 17px; color: var(--muted); }
 .menu-sep { height: 1px; background: var(--line); margin: 4px 6px; }
-/* trailing badge/state on a menu row (filter count, sound on/off) */
-.menu-badge, .menu-state { margin-left: auto; font-size: 12px; color: var(--muted); }
-.menu-badge { background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 0 7px; font-weight: 600; }
+/* filter-count badge on a menu row */
+.menu-badge { margin-left: auto; font-size: 12px; background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 0 7px; font-weight: 600; }
 /* library location row */
 .menu-info { display: flex; align-items: center; gap: 8px; padding: 8px 12px; color: var(--muted); font-size: 12px; min-width: 0; }
 .menu-info .ic { width: 15px; height: 15px; flex-shrink: 0; }
-/* small section label inside the menu */
-.menu-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); padding: 6px 12px 2px; }
-/* language rows */
-.menu-lang.active { background: var(--surface-2); }
-.menu-lang .lang-code { font-family: var(--font-display); font-weight: 700; letter-spacing: .5px; width: 26px; flex-shrink: 0; color: var(--muted); }
-.menu-lang.active .lang-code { color: var(--text); }
-.menu-lang .lang-check { margin-left: auto; }
-.menu-lang .lang-check .ic { width: 15px; height: 15px; color: var(--accent); }
 
 .about-brand { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
 .about-logo { width: 44px; height: 44px; animation: none; }
@@ -246,41 +251,56 @@ a.icon-btn { text-decoration: none; }
 .tunnel-err { display: flex; align-items: flex-start; gap: 8px; color: #ef4444; font-size: 13px; line-height: 1.45; padding: 18px 0; }
 .tunnel-err .ic { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
 
-.filter-panel {
-  display: grid; gap: 12px 18px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  padding: 16px 22px; background: var(--surface); border-bottom: 1px solid var(--line);
+/* filters: slim drawer from the right, results stay visible and update live */
+.filter-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 45; width: min(300px, 88vw);
+  display: flex; flex-direction: column; gap: 14px; overflow-y: auto;
+  padding: 16px 18px calc(16px + env(safe-area-inset-bottom,0px));
+  background: var(--surface); border-left: 1px solid var(--line);
+  box-shadow: -12px 0 40px rgba(0,0,0,.35);
 }
-.filter-panel label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--muted); }
-.filter-panel input, .filter-panel select {
+.fd-enter { transition: transform .22s ease; }
+.fd-off { transform: translateX(100%); }
+.fd-on  { transform: translateX(0); }
+.fd-head { display: flex; align-items: center; justify-content: space-between; }
+.fd-title { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 16px; }
+.fd-title .ic { width: 18px; height: 18px; }
+.fd-field { display: flex; flex-direction: column; gap: 6px; }
+.fd-lbl { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+.fd-lbl .ic { width: 15px; height: 15px; }
+.fd-field select {
   background: var(--surface-2); border: 1px solid var(--line); color: var(--text);
-  padding: 8px 10px; border-radius: 8px; font-size: 14px; outline: none;
+  padding: 10px 10px; border-radius: 8px; font-size: 14px; outline: none; cursor: pointer;
 }
-.filter-panel input:focus, .filter-panel select:focus { border-color: var(--accent); }
+.fd-field select:focus { border-color: var(--accent); }
 .filter-clear {
-  grid-column: 1 / -1; justify-self: start; align-self: end;
+  margin-top: 4px; align-self: start;
   display: inline-flex; align-items: center; gap: 7px;
   background: none; border: 1px solid var(--line); color: var(--muted);
-  padding: 8px 14px; border-radius: 999px; font-size: 13px; cursor: pointer;
+  padding: 9px 14px; border-radius: 999px; font-size: 13px; cursor: pointer;
 }
 .filter-clear:hover { border-color: #ef4444; color: #ef4444; }
 .filter-clear .ic { width: 15px; height: 15px; }
-/* dot on the header filter button when filters are active */
-.filter-btn.has-filters { position: relative; }
-.filter-btn.has-filters::after {
-  content: ""; position: absolute; top: 6px; right: 6px; width: 7px; height: 7px;
-  border-radius: 50%; background: var(--focus); border: 1.5px solid var(--surface);
-}
 
-.chips-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 22px 0; align-items: center; }
+/* active-filter chips sit inline next to the funnel in the header */
+.chips-inline { display: flex; align-items: center; gap: 6px; min-width: 0; overflow-x: auto; }
+.chips-inline::-webkit-scrollbar { height: 0; }
 .filter-chip {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; gap: 4px; flex: none; white-space: nowrap;
   background: color-mix(in srgb, var(--accent) 18%, var(--surface)); color: var(--text);
   border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
-  padding: 4px 6px 4px 12px; border-radius: 999px; font-size: 13px;
+  padding: 3px 5px 3px 10px; border-radius: 999px; font-size: 12px;
 }
-.filter-chip button { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 12px; padding: 0 4px; border-radius: 999px; }
+.filter-chip button { background: none; border: 0; color: var(--muted); cursor: pointer; display: grid; place-items: center; padding: 2px; border-radius: 999px; }
 .filter-chip button:hover { color: var(--accent); }
-.chip-clear { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 12px; text-decoration: underline; }
+.filter-chip button .ic { width: 13px; height: 13px; }
+/* clear-all: a round X, not a text link */
+.chip-clear {
+  display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; flex: none;
+  background: none; border: 1px solid var(--line); color: var(--muted); cursor: pointer;
+}
+.chip-clear:hover { border-color: #ef4444; color: #ef4444; }
+.chip-clear .ic { width: 13px; height: 13px; }
 .back-btn { border-color: transparent; }
 
 /* inline header progress — fills the gap between the item count and the icons */
@@ -323,7 +343,16 @@ a.icon-btn { text-decoration: none; }
 /* locked id field reads as static text until the pencil unlocks it */
 .id-input[readonly] { opacity: .7; cursor: default; }
 
-nav.tabs { display: flex; gap: 4px; padding: 16px 22px 0; flex-wrap: wrap; }
+/* tabs stick right under the header so they stay reachable while scrolling. The
+   wavy divider sits at the bar's own bottom edge (inside its box), so it shares the
+   bar's frosted background and --line colour instead of protruding into the content. */
+nav.tabs {
+  position: sticky; top: 62px; z-index: 19;   /* == header height, so no gap/overlap when scrolled */
+  display: flex; gap: 4px; padding: 6px 22px; flex-wrap: wrap;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
 /* first tab aligns flush with the section content, not indented by its padding */
 nav.tabs button:first-child { padding-left: 0; }
 nav.tabs button:first-child.on::after { left: 0; }
@@ -341,7 +370,7 @@ nav.tabs button.on::after {
   background: var(--accent); border-radius: 2px;
 }
 
-main, .watch, .filter-panel, .chips-row, nav.tabs { max-width: 1600px; margin-inline: auto; }
+main, .watch { max-width: 1600px; margin-inline: auto; }
 main, .watch { padding: 8px 22px; }
 .section-head { display: flex; align-items: baseline; gap: 12px; margin: 26px 0 14px; }
 .section-head h2 { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 20px; font-weight: 700; margin: 0; letter-spacing: .3px; }
@@ -601,26 +630,13 @@ main, .watch { padding: 8px 22px; }
   .detail-aside .actions { flex: 1; }
 }
 @media (max-width: 560px) {
-  /* Player bar: on a phone the single row crowds and pushes the fullscreen button
-     off-screen. Stack it — progress (seek + times) on top, the control row below —
-     so every control, fullscreen included, always shows. */
-  .vplayer-bar { flex-direction: column; align-items: stretch; gap: 8px; }
-  .vplayer-seek { height: 8px; }
-  .vplayer-controls { justify-content: space-between; gap: 8px; }
-  .vplayer-sel { max-width: 88px; }
-  .vplayer-btn svg { width: 24px; height: 24px; } /* bigger tap targets on touch */
-
-  /* overflow menu: pin near the right edge but clamp to the viewport so it can't
-     grow off-screen to the left (was cutting off labels on a phone) */
+  /* clamp the overflow menu to the viewport so it can't run off the left edge */
   .menu {
     right: 8px; min-width: 0;
     width: min(320px, calc(100vw - 16px));
   }
-  /* same clamp for the player's gear popover */
-  .subcfg { right: 0; width: min(240px, calc(100vw - 24px)); }
 
-  /* stretch (not flex-start) so the action rail fills the width instead of
-     shrinking to content and hugging the left; poster stays centered on its own. */
+  /* stretch so the action rail fills the width; poster centres itself */
   .detail-aside { flex-direction: column; align-items: stretch; }
   .big-case { width: 160px; align-self: center; }
   .chips { justify-content: flex-start; }
@@ -646,9 +662,7 @@ main, .watch { padding: 8px 22px; }
 /* custom video player */
 .vplayer { position: relative; background: #000; border-radius: 10px; overflow: hidden; line-height: 0; }
 .vplayer:fullscreen { border-radius: 0; }
-/* In fullscreen (esp. a phone held upright) the browser/OS paints a "fullscreen"
-   hint and gesture bar over the top/bottom edges. Pad the bar and close button by
-   the safe-area insets so they never hide behind that chrome. */
+/* fullscreen: clear the OS gesture/hint bars with safe-area insets */
 .vplayer:fullscreen .vplayer-bar { padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
 .vplayer:fullscreen .vplayer-close { top: calc(8px + env(safe-area-inset-top, 0px)); }
 .vplayer-video { width: 100%; max-height: 70vh; display: block; }
@@ -748,6 +762,124 @@ main, .watch { padding: 8px 22px; }
 /* push the gear + fullscreen to the right edge, play stays left */
 .vplayer-spacer { flex: 1; }
 
+/* backend-gone curtain: grey, blocking, animated logo + the error cue plays once */
+.offline-curtain {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  padding: 24px; text-align: center;
+  background: color-mix(in srgb, var(--bg) 40%, #6b7075);
+  backdrop-filter: grayscale(1) blur(3px);
+}
+.offline-logo {
+  width: 96px; height: 96px; background: #d4d6d8; border: 0; cursor: pointer; padding: 0;
+  -webkit-mask: url(/logo.svg) center/contain no-repeat; mask: url(/logo.svg) center/contain no-repeat;
+}
+.offline-logo.poke { animation: offline-wobble .7s ease-in-out; }
+@keyframes offline-wobble {
+  0%,100% { transform: translateY(0) rotate(0); }
+  25%     { transform: translateY(-10px) rotate(-8deg); }
+  60%     { transform: translateY(-4px) rotate(8deg); }
+}
+.offline-title { margin: 0; font-family: var(--font-display); font-size: 24px; color: #f2f3f4; }
+.offline-sub { margin: 0; max-width: 320px; font-size: 14px; color: #c4c7ca; line-height: 1.5; }
+
+/* library switcher modal */
+.lib-list { list-style: none; margin: 0 0 4px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.lib-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+}
+.lib-row.active { border-color: var(--accent); }
+.lib-row.unreachable { opacity: .6; }
+.lib-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.lib-ic .ic { width: 18px; height: 18px; color: var(--muted); }
+.lib-text { min-width: 0; }
+.lib-key { font-family: ui-monospace, monospace; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lib-sub { font-size: 12px; color: var(--muted); }
+.lib-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.lib-btn { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 7px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+.lib-btn.ghost { background: none; border: 1px solid var(--line); color: var(--muted); }
+.lib-btn.ghost:hover { color: var(--text); border-color: var(--accent); }
+.lib-here { font-size: 12px; color: var(--accent); }
+.lib-db-actions { display: flex; flex-direction: column; gap: 8px; }
+.lib-db-actions .tunnel-btn.stop { margin-top: 0; }
+
+/* unavailable item (file moved / drive gone): dim the cover, badge it, no play */
+.big-case.is-missing .art, .big-case.is-missing .fallback { filter: grayscale(1) brightness(.6); }
+.missing-badge {
+  position: absolute; top: 8px; left: 8px; z-index: 2;
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(0,0,0,.7); color: #ffb020;
+}
+.missing-badge .ic { width: 17px; height: 17px; }
+.unavailable-note {
+  display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted);
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+}
+.unavailable-note .ic { width: 18px; height: 18px; color: #ffb020; flex-shrink: 0; }
+
+/* page footer: a slim always-visible bar, one row, so it covers the least.
+   meta left · languages centre · toggles right. */
+.site-footer {
+  position: fixed; left: 0; right: 0; z-index: 15;
+  bottom: var(--bottomnav, 0px);   /* rides above the mobile bottom-nav; 0 elsewhere */
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 14px; color: var(--muted);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(10px);
+}
+.site-footer { border-top: 1px solid var(--line); }
+.foot-meta { display: flex; align-items: center; gap: 6px; font-size: 12px; flex: none; min-width: 0; }
+.foot-mark { font-family: var(--font-display); font-weight: 700; letter-spacing: .5px; color: var(--text); }
+.foot-ver { font-variant-numeric: tabular-nums; }
+/* folder + current path; opens the library switcher */
+.foot-lib {
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 40vw;
+  background: none; border: 0; color: var(--muted); cursor: pointer; padding: 3px 6px; border-radius: 6px;
+}
+.foot-lib:hover { color: var(--text); background: var(--surface-2); }
+.foot-lib .ic { width: 15px; height: 15px; flex-shrink: 0; }
+.foot-path { font-family: ui-monospace, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.foot-spacer { flex: 1; }
+.foot-row { display: flex; align-items: center; gap: 4px; flex: none; }
+.foot-btn {
+  height: 30px; min-width: 30px; padding: 0 6px; display: inline-flex; align-items: center;
+  justify-content: center; gap: 5px; border-radius: 7px;
+  background: none; border: 0; color: var(--muted); cursor: pointer; text-decoration: none;
+}
+.foot-btn:hover, .foot-btn.active { color: var(--text); background: var(--surface-2); }
+.foot-btn .ic { width: 17px; height: 17px; }
+/* language: globe + current code, opens upward to the full names */
+.foot-langwrap { position: relative; }
+.foot-langcode { font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: .5px; }
+.foot-langmenu {
+  position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 30; min-width: 150px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 6px; box-shadow: 0 -8px 24px rgba(0,0,0,.3); display: flex; flex-direction: column; gap: 2px;
+}
+.foot-langmenu button {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  background: none; border: 0; color: var(--text); cursor: pointer;
+  padding: 8px 10px; border-radius: 7px; font-size: 14px;
+}
+.foot-langmenu button:hover, .foot-langmenu button.active { background: var(--surface-2); }
+.foot-langmenu .lang-code {
+  font-family: var(--font-display); font-weight: 700; letter-spacing: .5px;
+  width: 26px; flex-shrink: 0; color: var(--muted);
+}
+.foot-langmenu button.active .lang-code { color: var(--text); }
+
+/* Phone: stack the seek on its own full-width row so the time bar is always
+   visible. Must sit after the base .vplayer-* rules (media queries add no
+   specificity, so a later plain rule would win). */
+@media (max-width: 560px) {
+  .vplayer-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+  .vplayer-seek { height: 10px; }
+  .vplayer-controls { justify-content: space-between; gap: 8px; }
+  .vplayer-btn svg { width: 24px; height: 24px; } /* bigger tap targets on touch */
+  .subcfg { right: 0; width: min(240px, calc(100vw - 24px)); }
+}
+
 /* ---- big screens / TV: scale cards up so posters stay readable across a room ---- */
 @media (min-width: 1400px) {
   .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 26px 22px; }
@@ -769,7 +901,7 @@ main, .watch { padding: 8px 22px; }
    (equal specificity → source order decides). Header collapses; tabs become a
    fixed bottom navigation bar; posters go two-up. */
 @media (max-width: 640px) {
-  :root { --bottomnav: 64px; }
+  :root { --bottomnav: 64px; --footer-h: 0px; }  /* footer is in-flow on mobile */
 
   /* header is now just brand + search + overflow menu, so it fits one row: the
      search pill grows to fill the middle, the menu stays pinned right. */
@@ -780,14 +912,18 @@ main, .watch { padding: 8px 22px; }
   .search-toggle { max-width: none; }   /* fill the middle so it clearly reads as search */
   .search { padding-top: 12px; padding-bottom: 12px; } /* 44px tap target */
   .spacer { display: none; }
+  .foot-path { display: none; }         /* keep the folder icon, drop the long path */
 
   nav.tabs {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 40;
     margin: 0; padding: 6px 0 calc(6px + env(safe-area-inset-bottom,0px));
     gap: 0; flex-wrap: nowrap;
     background: color-mix(in srgb, var(--bg) 92%, transparent);
-    backdrop-filter: blur(14px); border-top: 1px solid var(--line);
+    backdrop-filter: blur(14px); border-top: 1px solid var(--line); border-bottom: 0;
   }
+
+  /* footer flows at the end of content (above the fixed bottom-nav), not a 2nd fixed bar */
+  .site-footer { position: static; bottom: auto; }
   nav.tabs button {
     flex: 1 1 0; flex-direction: column; gap: 3px;
     padding: 6px 1px; font-size: 9.5px; letter-spacing: 0; min-width: 0;

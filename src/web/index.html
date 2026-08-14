@@ -14,6 +14,14 @@
   <script defer src="/alpine.min.js"></script>
 </head>
 <body x-data="gobby()" x-init="init()" :class="{'is-guest': info.owner === false}">
+  <!-- backend gone: a grey blocking curtain so the cached page can't be used blindly.
+       The logo only wobbles (and plays the error cue) when you poke it. -->
+  <div class="offline-curtain" x-show="offline" x-transition.opacity style="display:none">
+    <button class="offline-logo" :class="{poke: offlinePoke}" @click="pokeOffline()" :title="t('offlineTitle')"></button>
+    <h2 class="offline-title" x-text="t('offlineTitle')"></h2>
+    <p class="offline-sub" x-text="t('offlineSub')"></p>
+  </div>
+
   <header>
     <button class="icon-btn back-btn" x-show="stack.length > 1" @click="back()" :title="t('back')" x-html="svg('back')"></button>
     <button class="brand" @click="goHome()" :title="t('home')"><span class="brand-logo"></span><span class="brand-name"><span>G</span><span>o</span><span>b</span><span>b</span><span>y</span></span></button>
@@ -31,6 +39,16 @@
           <button class="search-clear" @click="q=''; toggleSearch()" x-html="svg('back')"></button>
         </div>
       </template>
+      <!-- filter funnel + the active-filter chips right beside it -->
+      <button class="filter-btn" x-show="top.view === 'home' && tab !== 'watch'"
+              :class="{active: showFilters, 'has-filters': activeChips().length}"
+              @click="showFilters = !showFilters" :title="t('filters')" x-html="svg('filter')"></button>
+      <div class="chips-inline" x-show="top.view === 'home' && tab !== 'watch' && activeChips().length && !searchOpen">
+        <template x-for="c in activeChips()" :key="c.k">
+          <span class="filter-chip"><span x-text="c.label"></span><button @click="removeChip(c.k)" :title="t('remove')" x-html="svg('close')"></button></span>
+        </template>
+        <button class="chip-clear" @click="clearFilters()" :title="t('clearFilters')" x-html="svg('close')"></button>
+      </div>
     </div>
     <!-- inline progress (scan / cover-fetch): color signals the phase -->
     <div class="hprog" x-show="busy" :title="progLabel()" style="display:none">
@@ -42,24 +60,16 @@
     </div>
     <span class="spacer" x-show="!busy"></span>
 
-    <!-- one overflow menu holds everything: library info, filters, sound, theme,
-         language, and the actions. Header stays just brand + search + this. -->
+    <!-- overflow menu: everything but brand + search lives here -->
     <div class="menu-wrap" @keydown.escape="menuOpen=false">
       <button class="icon-btn" :class="{active: menuOpen}" @click="menuOpen = !menuOpen" :disabled="busy" :title="t('more')" x-html="svg('more')"></button>
       <div class="menu" x-show="menuOpen" @click.outside="menuOpen=false" x-transition style="display:none">
-        <!-- library location + item count -->
         <div class="menu-info" x-show="info.root" :title="info.root">
           <span x-html="svg('folder')"></span>
           <span class="root-path" x-text="info.root"></span>
           <span class="root-count" x-text="info.total"></span>
         </div>
         <div class="menu-sep" x-show="info.root"></div>
-
-        <!-- filters (only where a filterable grid is shown) -->
-        <button x-show="top.view === 'home' && tab !== 'watch' && tab !== 'home'" :class="{active: showFilters}" @click="showFilters = !showFilters; menuOpen=false">
-          <span x-html="svg('filter')"></span> <span x-text="t('filters')"></span>
-          <span class="menu-badge" x-show="activeChips().length" x-text="activeChips().length"></span>
-        </button>
 
         <template x-if="['home','series','movie','audio','book'].includes(tab) && top.view==='home' && info.owner !== false">
           <div style="display:contents">
@@ -74,28 +84,7 @@
         <button @click="aboutOpen=true; menuOpen=false"><span x-html="svg('info')"></span> <span x-text="t('about')"></span></button>
 
         <div class="menu-sep owner-only"></div>
-        <button class="owner-only" @click="changeFolder(); menuOpen=false"><span x-html="svg('folder')"></span> <span x-text="t('changeFolder')"></span></button>
-        <button class="owner-only" @click="exportDb(); menuOpen=false"><span x-html="svg('download')"></span> <span x-text="t('exportDb')"></span></button>
-        <button class="owner-only" @click="importDb(); menuOpen=false"><span x-html="svg('external')"></span> <span x-text="t('importDb')"></span></button>
-
-        <div class="menu-sep"></div>
-        <!-- quick toggles: sound, theme -->
-        <button @click="toggleSound()"><span x-html="svg(soundOn ? 'volume' : 'mute')"></span> <span x-text="t('sound')"></span><span class="menu-state" x-text="soundOn ? t('on') : t('off')"></span></button>
-        <button @click="toggleTheme()"><span x-html="svg(theme === 'dark' ? 'sun' : 'moon')"></span> <span x-text="t('theme')"></span></button>
-
-        <div class="menu-sep"></div>
-        <!-- language row -->
-        <div class="menu-lbl" x-text="t('language')"></div>
-        <template x-for="l in langs" :key="l">
-          <button class="menu-lang" :class="{active: l === lang}" @click="setLang(l)">
-            <span class="lang-code" x-text="l.toUpperCase()"></span>
-            <span x-text="langName(l)"></span>
-            <span class="lang-check" x-show="l === lang" x-html="svg('check')"></span>
-          </button>
-        </template>
-
-        <div class="menu-sep"></div>
-        <a class="menu-link" href="https://github.com/danijerez/Gobby" target="_blank" rel="noopener"><span x-html="svg('github')"></span> <span>GitHub</span></a>
+        <button class="owner-only" @click="openLibraries(); menuOpen=false"><span x-html="svg('folder')"></span> <span x-text="t('libraries')"></span></button>
       </div>
     </div>
     <input type="file" x-ref="dbfile" accept=".db" style="display:none" @change="doImport($event)">
@@ -125,26 +114,35 @@
     <p class="empty" x-show="!searchResults.length" x-text="t('empty')"></p>
   </main>
 
-  <div class="filter-panel" x-show="showFilters && top.view === 'home' && tab !== 'watch'" x-transition style="display:none">
-    <label><span x-text="t('fFormat')"></span>
+  <!-- filters: a slim drawer from the right; results stay visible and update live -->
+  <aside class="filter-drawer" x-show="showFilters" @keydown.escape="showFilters=false"
+         x-transition:enter="fd-enter" x-transition:enter-start="fd-off" x-transition:enter-end="fd-on"
+         x-transition:leave="fd-enter" x-transition:leave-start="fd-on" x-transition:leave-end="fd-off"
+         style="display:none">
+    <div class="fd-head">
+      <span class="fd-title"><span x-html="svg('filter')"></span> <span x-text="t('filters')"></span></span>
+      <button class="icon-btn" @click="showFilters=false" :title="t('back')" x-html="svg('close')"></button>
+    </div>
+    <label class="fd-field"><span class="fd-lbl"><span x-html="svg('clapper')"></span> <span x-text="t('fFormat')"></span></span>
       <select x-model="filters.ext" @change="load()">
         <option value="" x-text="t('fAny')"></option>
-        <template x-for="ext in formatOptions()" :key="ext">
-          <option :value="ext" x-text="'.' + ext"></option>
-        </template>
+        <template x-for="ext in formatOptions()" :key="ext"><option :value="ext" x-text="'.' + ext"></option></template>
       </select>
     </label>
-    <label><span x-text="t('fYear')"></span>
-      <input type="number" inputmode="numeric" x-model="filters.year" @input.debounce.400ms="load()" placeholder="1990">
+    <label class="fd-field"><span class="fd-lbl"><span x-html="svg('clock')"></span> <span x-text="t('fYear')"></span></span>
+      <select x-model="filters.year" @change="load()">
+        <option value="" x-text="t('fAny')"></option>
+        <template x-for="y in yearOptions()" :key="y"><option :value="y" x-text="y"></option></template>
+      </select>
     </label>
-    <label><span x-text="t('fCover')"></span>
+    <label class="fd-field"><span class="fd-lbl"><span x-html="svg('palette')"></span> <span x-text="t('fCover')"></span></span>
       <select x-model="filters.cover" @change="load()">
         <option value="" x-text="t('fCoverAll')"></option>
         <option value="with" x-text="t('fCoverWith')"></option>
         <option value="without" x-text="t('fCoverWithout')"></option>
       </select>
     </label>
-    <label><span x-text="t('fRating')"></span>
+    <label class="fd-field"><span class="fd-lbl"><span x-html="svg('star')"></span> <span x-text="t('fRating')"></span></span>
       <select x-model="filters.rating_min" @change="load()">
         <option value="" x-text="t('fAny')"></option>
         <option value="3">3★+</option>
@@ -152,27 +150,23 @@
         <option value="5">5★</option>
       </select>
     </label>
-    <label><span x-text="t('fGenre')"></span>
-      <input type="text" x-model="filters.genre" @input.debounce.300ms="load()" placeholder="…">
+    <label class="fd-field" x-show="(info.genres || []).length"><span class="fd-lbl"><span x-html="svg('bookmark')"></span> <span x-text="t('fGenre')"></span></span>
+      <select x-model="filters.genre" @change="load()">
+        <option value="" x-text="t('fAny')"></option>
+        <template x-for="g in (info.genres || [])" :key="g"><option :value="g" x-text="g"></option></template>
+      </select>
     </label>
     <button class="filter-clear" x-show="activeChips().length" @click="clearFilters()">
       <span x-html="svg('trash')"></span> <span x-text="t('clearFilters')"></span>
     </button>
-  </div>
-
-  <div class="chips-row" x-show="activeChips().length" style="display:none">
-    <template x-for="c in activeChips()" :key="c.k">
-      <span class="filter-chip"><span x-text="c.label"></span><button @click="removeChip(c.k)">✕</button></span>
-    </template>
-    <button class="chip-clear" @click="clearFilters()" x-text="t('clear')"></button>
-  </div>
+  </aside>
 
   <main class="home-view" x-show="top.view === 'home' && tab === 'home' && !searching()" style="display:none">
-    <template x-if="homeCont.length">
+    <template x-if="applyFilters(homeCont).length">
       <div>
         <div class="section-head"><h2><span x-html="svg('play')"></span> <span x-text="t('continueW')"></span></h2></div>
         <div class="grid">
-          <template x-for="it in homeCont" :key="'c'+it.id">
+          <template x-for="it in applyFilters(homeCont)" :key="'c'+it.id">
             <div class="item" tabindex="0" role="button" @click="openHome(it)" @keydown.enter.prevent="openHome(it)">
               <div class="case">
                 <div class="art" :style="artStyle(it)"></div>
@@ -186,11 +180,11 @@
       </div>
     </template>
 
-    <template x-if="homeNew.length">
+    <template x-if="applyFilters(homeNew).length">
       <div>
         <div class="section-head"><h2><span x-html="svg('star')"></span> <span x-text="t('newlyAdded')"></span></h2></div>
         <div class="grid">
-          <template x-for="it in homeNew" :key="'n'+it.id">
+          <template x-for="it in applyFilters(homeNew)" :key="'n'+it.id">
             <div class="item" tabindex="0" role="button" @click="openHome(it)" @keydown.enter.prevent="openHome(it)">
               <div class="case">
                 <div class="art" :style="artStyle(it)"></div>
@@ -203,7 +197,7 @@
       </div>
     </template>
 
-    <p class="empty" x-show="!homeCont.length && !homeNew.length" x-text="t('empty')"></p>
+    <p class="empty" x-show="!applyFilters(homeCont).length && !applyFilters(homeNew).length" x-text="t('empty')"></p>
   </main>
 
   <main class="files-view" x-show="top.view === 'home' && tab === 'files' && !searching()" style="display:none">
@@ -364,11 +358,12 @@
     <template x-if="top.item">
       <div class="detail" x-data="{ it: top.item }">
         <div class="detail-aside">
-          <div class="big-case">
+          <div class="big-case" :class="{'is-missing': it.state === 'missing'}">
             <div class="art" :style="artStyle(it)"></div>
             <template x-if="!it.has_cover">
               <div class="fallback"><span class="fb-ic" x-html="mediaIcon(it.section)"></span><span class="fb-ttl" x-text="it.title"></span></div>
             </template>
+            <div class="missing-badge" x-show="it.state === 'missing'" :title="t('unavailable')"><span x-html="svg('alert')"></span></div>
             <div class="cover-edit owner-only">
               <button @click="$refs.coverfile.click()" :title="t('changeCover')"><span x-html="svg(coverBusy ? 'refresh' : 'palette')"></span></button>
               <button @click="setCoverURL(it)" :title="t('coverFromUrl')"><span x-html="svg('external')"></span></button>
@@ -376,7 +371,10 @@
             <input type="file" x-ref="coverfile" accept="image/*" style="display:none" @change="uploadCover(it, $event)">
           </div>
 
-          <div class="actions" x-show="it.kind === 'video' && !videoOpen">
+          <div class="unavailable-note" x-show="it.state === 'missing'">
+            <span x-html="svg('alert')"></span> <span x-text="t('unavailableNote')"></span>
+          </div>
+          <div class="actions" x-show="it.state !== 'missing' && it.kind === 'video' && !videoOpen">
             <button class="action primary" @click="playHere(it)"><span x-html="svg('play')"></span> <span x-text="t('playHere')"></span></button>
             <a class="action" :href="streamURL(it)" target="_blank" rel="noopener" @click="markOpened(it)"><span x-html="svg('external')"></span> <span x-text="t('openTab')"></span></a>
             <a class="action" x-show="isAndroid()" :href="androidIntent(it)" @click="markOpened(it)"><span x-html="svg('external')"></span> <span x-text="t('openWith')"></span></a>
@@ -386,7 +384,7 @@
             <a class="action" :href="downloadURL(it)"><span x-html="svg('download')"></span> <span x-text="t('download')"></span></a>
             <a class="action" x-show="imdbURL(it)" :href="imdbURL(it)" target="_blank" rel="noopener"><span x-html="svg('external')"></span> IMDb</a>
           </div>
-          <div class="actions" x-show="previewType(it)">
+          <div class="actions" x-show="it.state !== 'missing' && previewType(it)">
             <button class="action primary" @click="togglePreview(); markOpened(it)">
               <span x-html="svg('play')"></span> <span x-text="t('preview')"></span>
             </button>
@@ -396,7 +394,7 @@
             <a class="action" :href="downloadURL(it)"><span x-html="svg('download')"></span> <span x-text="t('download')"></span></a>
           </div>
           <!-- no inline preview (odd book formats, generic files): download / open / copy -->
-          <div class="actions" x-show="it.kind !== 'video' && it.kind !== 'audio' && !previewType(it)">
+          <div class="actions" x-show="it.state !== 'missing' && it.kind !== 'video' && it.kind !== 'audio' && !previewType(it)">
             <a class="action primary" :href="downloadURL(it)" @click="markOpened(it)"><span x-html="svg('download')"></span> <span x-text="t('download')"></span></a>
             <a class="action" :href="streamURL(it)" target="_blank" rel="noopener" @click="markOpened(it)"><span x-html="svg('external')"></span> <span x-text="t('openTab')"></span></a>
             <button class="action" @click="copyStream(it)"><span x-html="svg('copy')"></span> <span x-text="copied ? t('copied') : t('openExternal')"></span></button>
@@ -443,14 +441,11 @@
               <div class="vplayer-controls">
               <button class="vplayer-btn" @click="togglePlay()" x-html="svg(playing ? 'pause' : 'play')"></button>
               <span class="vplayer-spacer"></span>
-              <!-- everything but play/fullscreen folds behind the gear: audio track,
-                   subtitle track, and subtitle look. Keeps the bar from overflowing
-                   on a phone (where the seek row was getting squeezed off). -->
+              <!-- gear folds audio + subtitle tracks + subtitle look, keeping the bar short -->
               <div class="subcfg-wrap" x-show="audioTracks.length > 1 || subTracks.length" @keydown.escape="subCfgOpen=false">
                 <button class="vplayer-btn" :class="{active: subCfgOpen}" @click="subCfgOpen = !subCfgOpen" x-html="svg('gear')" :title="t('playerSettings')"></button>
                 <div class="subcfg" x-show="subCfgOpen" @click.outside="subCfgOpen=false" x-transition style="display:none">
-                  <!-- audio track (remux, when >1). Value straight off the event — x-model
-                       + @change can fire before the model updates (the "sometimes" bug). -->
+                  <!-- value straight off the event: x-model+@change can pass a stale index -->
                   <div class="subcfg-row" x-show="audioTracks.length > 1">
                     <span class="subcfg-lbl" x-text="t('acodec')"></span>
                     <select class="subcfg-full" @change="setAudio(+$event.target.value)">
@@ -468,7 +463,6 @@
                       </template>
                     </select>
                   </div>
-                  <!-- subtitle look, only useful with a subtitle showing -->
                   <template x-if="subTracks.length && subSel >= 0">
                     <div style="display:contents">
                       <div class="subcfg-row">
@@ -681,6 +675,37 @@
     </template>
   </main>
 
+  <!-- slim always-on footer: mark · language selector · toggles/links -->
+  <footer class="site-footer" x-show="!(searchOpen && q)">
+    <div class="foot-meta">
+      <span class="foot-mark">Gobby</span>
+      <span class="foot-ver" x-show="info.version">v<span x-text="info.version"></span></span>
+      <button class="foot-lib owner-only" @click="openLibraries()" :title="t('libraries')">
+        <span x-html="svg('folder')"></span>
+        <span class="foot-path" x-text="info.root" x-show="info.root"></span>
+      </button>
+    </div>
+    <span class="foot-spacer"></span>
+    <div class="foot-row">
+      <!-- language: globe + current code; opens upward to full names -->
+      <div class="foot-langwrap" @keydown.escape="langOpen=false">
+        <button class="foot-btn foot-lang" :class="{active: langOpen}" @click="langOpen=!langOpen" :title="t('language')">
+          <span x-html="svg('globe')"></span><span class="foot-langcode" x-text="lang.toUpperCase()"></span>
+        </button>
+        <div class="foot-langmenu" x-show="langOpen" @click.outside="langOpen=false" x-transition style="display:none">
+          <template x-for="l in langs" :key="l">
+            <button :class="{active: l === lang}" @click="setLang(l); langOpen=false">
+              <span class="lang-code" x-text="l.toUpperCase()"></span><span x-text="langName(l)"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+      <button class="foot-btn" @click="toggleTheme()" :title="t('theme')"><span x-html="svg(theme === 'dark' ? 'sun' : 'moon')"></span></button>
+      <button class="foot-btn" @click="toggleSound()" :title="t('sound')"><span x-html="svg(soundOn ? 'volume' : 'mute')"></span></button>
+      <a class="foot-btn" href="https://github.com/danijerez/Gobby" target="_blank" rel="noopener" title="GitHub"><span x-html="svg('github')"></span></a>
+    </div>
+  </footer>
+
   <div class="modal-bg" x-show="connectOpen" @click="connectOpen=false" x-transition style="display:none">
     <div class="modal" @click.stop>
       <div class="modal-head">
@@ -777,6 +802,44 @@
         </div>
 
         <p class="connect-hint" style="text-align:left" x-text="t('mcpTools')"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Biblioteca: switch between indexed catalogues, re-point one to this folder,
+       export the current one, or merge another db in. -->
+  <div class="modal-bg" x-show="libOpen" @click="libOpen=false" x-transition style="display:none">
+    <div class="modal" @click.stop>
+      <div class="modal-head">
+        <h2><span x-html="svg('folder')"></span> <span x-text="t('libraries')"></span></h2>
+        <button class="icon-btn" @click="libOpen=false" x-html="svg('back')"></button>
+      </div>
+      <div class="connect-body">
+        <ul class="lib-list">
+          <template x-for="l in libraries" :key="l.key">
+            <li class="lib-row" :class="{active: l.current, unreachable: !l.reachable}">
+              <div class="lib-main">
+                <span class="lib-ic" x-html="svg(l.reachable ? 'folder' : 'alert')"></span>
+                <div class="lib-text">
+                  <div class="lib-key" x-text="l.key"></div>
+                  <div class="lib-sub"><span x-text="l.total"></span> <span x-text="t('filesUnit')"></span><span x-show="!l.reachable"> · <span x-text="t('unreachable')"></span></span></div>
+                </div>
+              </div>
+              <div class="lib-actions">
+                <button class="lib-btn" x-show="!l.current && l.reachable" @click="switchLibrary(l.key)" x-text="t('view')"></button>
+                <span class="lib-here" x-show="l.current" x-text="t('viewing')"></span>
+                <button class="lib-btn ghost" @click="rebindLibrary(l.key)" :title="t('rebindHint')" x-text="t('rebind')"></button>
+              </div>
+            </li>
+          </template>
+        </ul>
+
+        <div class="menu-sep"></div>
+        <div class="lib-db-actions owner-only">
+          <button class="tunnel-btn stop" @click="changeFolder()"><span x-html="svg('folder')"></span> <span x-text="t('changeFolder')"></span></button>
+          <button class="tunnel-btn stop" @click="exportDb()"><span x-html="svg('download')"></span> <span x-text="t('exportDb')"></span></button>
+          <button class="tunnel-btn stop" @click="importDb()"><span x-html="svg('external')"></span> <span x-text="t('importDb')"></span></button>
+        </div>
       </div>
     </div>
   </div>

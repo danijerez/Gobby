@@ -45,16 +45,6 @@ func main() {
 		dataDir = base
 	}
 	dbPath := filepath.Join(dataDir, "gobby.db")
-	// An imported DB staged by the UI is applied on next start (swapping an open
-	// SQLite handle at runtime is unsafe). The previous DB is kept as .bak.
-	if staged := dbPath + ".import"; fileExists(staged) {
-		_ = os.Rename(dbPath, dbPath+".bak")
-		if err := os.Rename(staged, dbPath); err != nil {
-			slog.Warn("could not apply imported db", "err", err)
-		} else {
-			slog.Info("applied imported database")
-		}
-	}
 	db, err := openDB(dbPath)
 	if err != nil {
 		fatal("open db", err)

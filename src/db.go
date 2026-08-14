@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -322,6 +323,145 @@ func markSeen(db *sql.DB, libraryKey, relPath string, runID int64) error {
 
 func markMissing(db *sql.DB, libraryKey string, runID int64) error {
 	_, err := db.Exec(`UPDATE items SET scan_state='missing' WHERE library_key=? AND last_seen_scan<>?`, libraryKey, runID)
+	return err
+}
+
+// facets returns the distinct genres and the year range present in a library, so
+// the filter UI can offer real choices instead of free text. Genres stored as
+// "Action, Comedy" are split and de-duped.
+func facets(db *sql.DB, libraryKey string) (genres []string, yearMin, yearMax int) {
+	seen := map[string]bool{}
+	rows, err := db.Query(`SELECT DISTINCT genre FROM items WHERE library_key=? AND scan_state='present' AND genre<>''`, libraryKey)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var g string
+			if rows.Scan(&g) != nil {
+				continue
+			}
+			for _, part := range strings.Split(g, ",") {
+				p := strings.TrimSpace(part)
+				if p != "" && !seen[p] {
+					seen[p] = true
+					genres = append(genres, p)
+				}
+			}
+		}
+	}
+	sort.Strings(genres)
+	db.QueryRow(`SELECT COALESCE(MIN(year),0), COALESCE(MAX(year),0) FROM items WHERE library_key=? AND scan_state='present' AND year>0`, libraryKey).Scan(&yearMin, &yearMax)
+	return genres, yearMin, yearMax
+}
+
+// LibraryInfo describes one indexed catalogue for the switcher UI.
+type LibraryInfo struct {
+	Key      string `json:"key"`
+	Root     string `json:"root"`     // path used to resolve files (key if it's a path, else "")
+	Total    int    `json:"total"`    // present items
+	Reachable bool  `json:"reachable"` // the root exists on this machine right now
+	Current  bool   `json:"current"`  // the one being viewed
+}
+
+// listLibraries returns every catalogue in the DB. A default library_key is the
+// scan root's absolute path, so we treat a key that resolves to an existing dir
+// as its own root; custom -library names carry no path (Root "", not reachable).
+func listLibraries(db *sql.DB, currentKey string) ([]LibraryInfo, error) {
+	rows, err := db.Query(`SELECT library_key, COUNT(*) FROM items WHERE scan_state='present' GROUP BY library_key ORDER BY library_key`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []LibraryInfo
+	for rows.Next() {
+		var li LibraryInfo
+		if err := rows.Scan(&li.Key, &li.Total); err != nil {
+			return nil, err
+		}
+		if dirExists(li.Key) { // key is a path that still exists here
+			li.Root = li.Key
+			li.Reachable = true
+		}
+		li.Current = li.Key == currentKey
+		out = append(out, li)
+	}
+	return out, rows.Err()
+}
+
+// itemColumns is every items column except the autoincrement id, used to copy
+// rows between databases (export a library / merge an import) without clashing ids.
+const itemColumns = `library_key, kind, rel_path, size, modtime, title, artist, album,
+	year, genre, duration, season, episode, cover, meta, imdb_id, notes, rating,
+	section, section_source, section_reason, scan_state, last_seen_scan, enrich_state,
+	added_at, last_opened, updated_at`
+
+// exportLibrary writes a standalone gobby.db to destPath containing only the given
+// library's items (plus the whole watchlist — it isn't per-library). Uses ATTACH so
+// it's a straight row copy, no re-encoding.
+func exportLibrary(db *sql.DB, libraryKey, destPath string) error {
+	_ = os.Remove(destPath)
+	if _, err := db.Exec(`ATTACH DATABASE ? AS exp`, destPath); err != nil {
+		return err
+	}
+	defer db.Exec(`DETACH DATABASE exp`)
+	if _, err := db.Exec(`CREATE TABLE exp.items AS SELECT * FROM items WHERE 0`); err != nil {
+		return err
+	}
+	if _, err := db.Exec(`CREATE TABLE exp.watchlist AS SELECT * FROM watchlist WHERE 0`); err != nil {
+		return err
+	}
+	if _, err := db.Exec(`INSERT INTO exp.items SELECT * FROM items WHERE library_key=?`, libraryKey); err != nil {
+		return err
+	}
+	_, err := db.Exec(`INSERT INTO exp.watchlist SELECT * FROM watchlist`)
+	return err
+}
+
+// mergeImport pulls libraries from an uploaded gobby.db (at srcPath) into this one,
+// adding their rows instead of replacing. A library_key already present here is
+// skipped (kept as-is), so an import never clobbers a catalogue you already have.
+// Returns the keys actually added. Watchlist rows are appended (delete-dupe by title).
+func mergeImport(db *sql.DB, srcPath string) ([]string, error) {
+	if _, err := db.Exec(`ATTACH DATABASE ? AS imp`, srcPath); err != nil {
+		return nil, err
+	}
+	defer db.Exec(`DETACH DATABASE imp`)
+
+	rows, err := db.Query(`SELECT DISTINCT library_key FROM imp.items
+		WHERE library_key NOT IN (SELECT DISTINCT library_key FROM items)`)
+	if err != nil {
+		return nil, err
+	}
+	var add []string
+	for rows.Next() {
+		var k string
+		if err := rows.Scan(&k); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		add = append(add, k)
+	}
+	rows.Close()
+	for _, k := range add {
+		if _, err := db.Exec(`INSERT INTO items (`+itemColumns+`) SELECT `+itemColumns+` FROM imp.items WHERE library_key=?`, k); err != nil {
+			return nil, err
+		}
+	}
+	// watchlist: add titles not already present
+	_, _ = db.Exec(`INSERT INTO watchlist (kind, title, note, poster, year, done, created_at)
+		SELECT kind, title, note, poster, year, done, created_at FROM imp.watchlist
+		WHERE title NOT IN (SELECT title FROM watchlist)`)
+	return add, nil
+}
+
+// rebindLibrary re-points an existing catalogue at a new root: it rewrites the
+// library_key so the rows the user already indexed show up for the folder Gobby
+// now lives in (the "I moved the whole Gobby folder" case). Only the key changes;
+// every rel_path and edit is kept.
+func rebindLibrary(db *sql.DB, oldKey, newKey string) error {
+	if oldKey == newKey {
+		return nil
+	}
+	_, err := db.Exec(`UPDATE items SET library_key=? WHERE library_key=?`, newKey, oldKey)
 	return err
 }
 

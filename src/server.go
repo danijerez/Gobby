@@ -177,7 +177,8 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		var total int
 		db.QueryRow(`SELECT COUNT(*) FROM items WHERE library_key=? AND scan_state='present'`, lb.Key()).Scan(&total)
 		abs, _ := filepath.Abs(lb.Root())
-		writeJSON(w, map[string]any{"root": abs, "total": total, "base": baseURL(r), "sections": nonEmptySections(db, lb.Key()), "owner": requestIsOwner(r), "version": version}, nil)
+		genres, yMin, yMax := facets(db, lb.Key())
+		writeJSON(w, map[string]any{"root": abs, "total": total, "base": baseURL(r), "sections": nonEmptySections(db, lb.Key()), "owner": requestIsOwner(r), "version": version, "genres": genres, "yearMin": yMin, "yearMax": yMax}, nil)
 	})
 
 	mux.HandleFunc("GET /api/scan/status", func(w http.ResponseWriter, r *http.Request) {
@@ -518,9 +519,64 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		writeJSON(w, map[string]string{"status": "ok", "root": abs}, nil)
 	})
 
-	// Download the whole SQLite database (backup / move to another machine).
+	// Catalogues indexed in this DB (for the library switcher). Several can be
+	// reachable at once (e.g. two mounted disks).
+	mux.HandleFunc("GET /api/libraries", func(w http.ResponseWriter, r *http.Request) {
+		libs, err := listLibraries(db, lb.Key())
+		writeJSON(w, libs, err)
+	})
+
+	// View a different indexed catalogue. Read-only: nothing in the DB changes; it
+	// just re-points what Gobby shows (and rescans if that root is reachable).
+	mux.HandleFunc("POST /api/library/switch", func(w http.ResponseWriter, r *http.Request) {
+		var in struct{ Key string }
+		json.NewDecoder(r.Body).Decode(&in)
+		if in.Key == "" {
+			http.Error(w, "falta key", 400)
+			return
+		}
+		root := in.Key // a default key is its own path; custom names have no path
+		if !dirExists(root) {
+			root = lb.Root() // unreachable root: keep current folder for resolution
+		}
+		lb.Set(root, in.Key)
+		if dirExists(root) {
+			go func(root, key string) { scan(db, root, key) }(root, in.Key)
+		}
+		writeJSON(w, map[string]string{"status": "ok"}, nil)
+	})
+
+	// Re-point an indexed catalogue at the folder Gobby currently lives in — the
+	// "I moved the whole Gobby folder (db + media) elsewhere" case. Mutates the DB
+	// (rewrites library_key), so it's an explicit button, never automatic.
+	mux.HandleFunc("POST /api/library/rebind", func(w http.ResponseWriter, r *http.Request) {
+		var in struct{ Key string }
+		json.NewDecoder(r.Body).Decode(&in)
+		if in.Key == "" {
+			http.Error(w, "falta key", 400)
+			return
+		}
+		newRoot, _ := filepath.Abs(binaryDir())
+		newKey := rootKey(newRoot)
+		if err := rebindLibrary(db, in.Key, newKey); err != nil {
+			writeJSON(w, nil, err)
+			return
+		}
+		lb.Set(newRoot, newKey)
+		go func(root, key string) { scan(db, root, key) }(newRoot, newKey)
+		writeJSON(w, map[string]string{"status": "ok", "root": newRoot}, nil)
+	})
+
+	// Export the CURRENT library as a standalone gobby.db (its items + the
+	// watchlist). Built into a temp file via ATTACH, streamed, then removed.
 	mux.HandleFunc("GET /api/db/export", func(w http.ResponseWriter, r *http.Request) {
-		f, err := os.Open(dbPath)
+		tmp := dbPath + ".export"
+		if err := exportLibrary(db, lb.Key(), tmp); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		defer os.Remove(tmp)
+		f, err := os.Open(tmp)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
@@ -531,8 +587,8 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		io.Copy(w, f)
 	})
 
-	// Replace the database with an uploaded one, then rescan so the catalogue
-	// matches the current folder. The old DB is kept as gobby.db.bak.
+	// Merge an uploaded gobby.db into this one: its libraries are ADDED to the list
+	// (a key already here is skipped, never clobbered). No restart — done live.
 	mux.HandleFunc("POST /api/db/import", func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 512<<20)) // 512 MB cap
 		if err != nil {
@@ -543,14 +599,18 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 			http.Error(w, "no parece una base de datos Gobby", 400)
 			return
 		}
-		if err := os.WriteFile(dbPath+".import", body, 0o644); err != nil {
+		src := dbPath + ".import"
+		if err := os.WriteFile(src, body, 0o644); err != nil {
 			http.Error(w, err.Error(), 500)
 			return
 		}
-		// The live *sql.DB still points at the running file; signal the caller to
-		// restart. Swapping an open SQLite handle mid-flight is unsafe, so we stage
-		// the file and let the user restart Gobby to load it.
-		writeJSON(w, map[string]string{"status": "staged", "note": "reinicia Gobby para cargar la base importada"}, nil)
+		defer os.Remove(src)
+		added, err := mergeImport(db, src)
+		if err != nil {
+			writeJSON(w, nil, err)
+			return
+		}
+		writeJSON(w, map[string]any{"status": "ok", "added": added}, nil)
 	})
 
 	// Temporary Cloudflare tunnel: expose Gobby to the public internet with no
