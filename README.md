@@ -11,7 +11,7 @@
     <img alt="Alpine.js" src="https://img.shields.io/badge/Alpine.js-8BC0D0?logo=alpinedotjs&logoColor=black">
     <img alt="MCP" src="https://img.shields.io/badge/MCP-server-6E56CF">
     <img alt="Cloudflare" src="https://img.shields.io/badge/Cloudflare-Tunnel-F38020?logo=cloudflare&logoColor=white">
-    <img alt="version" src="https://img.shields.io/badge/version-0.1.0-2ea44f">
+    <img alt="version" src="https://img.shields.io/badge/version-0.2.0-2ea44f">
     <img alt="license" src="https://img.shields.io/badge/license-MIT-blue">
   </p>
 

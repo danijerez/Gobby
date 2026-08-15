@@ -15,7 +15,7 @@ import (
 	"github.com/mdp/qrterminal/v3"
 )
 
-var version = "0.1.0"
+var version = "0.2.0"
 
 var (
 	flagPath    = flag.String("p", envOr("GOBBY_PATH", ""), "carpeta a escanear (por defecto: junto al binario)")
