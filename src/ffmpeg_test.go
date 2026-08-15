@@ -23,7 +23,6 @@ func TestNeedsRemux(t *testing.T) {
 	}
 }
 
-// The probe regexes must pull codec + duration out of real `ffmpeg -i` stderr.
 func TestProbeRegexes(t *testing.T) {
 	sample := `  Duration: 01:53:07.53, start: 0.000000, bitrate: 5003 kb/s
   Stream #0:0: Video: h264 (High), yuv420p(progressive), 1920x1034
@@ -39,8 +38,27 @@ func TestProbeRegexes(t *testing.T) {
 	if m == nil {
 		t.Fatal("duration not matched")
 	}
-	// 1:53:07.53 = 6787.53s
+
 	if m[1] != "01" || m[2] != "53" || m[3] != "07" || m[4] != "53" {
 		t.Errorf("duration parts: %v", m[1:])
+	}
+}
+
+func TestParseDurationAndTracks(t *testing.T) {
+	sample := `  Duration: 01:53:07.53, start: 0.000000, bitrate: 5003 kb/s
+  Stream #0:0: Video: h264 (High), yuv420p, 1920x1034
+  Stream #0:1(spa): Audio: ac3, 48000 Hz, 5.1
+  Stream #0:2(eng): Audio: aac, 48000 Hz, stereo
+  Stream #0:3(spa): Subtitle: subrip`
+
+	if got := parseDuration(sample); got < 6787.52 || got > 6787.54 {
+		t.Errorf("parseDuration=%v, want ~6787.53", got)
+	}
+	tr := parseTracks(sample)
+	if len(tr.Audio) != 2 || tr.Audio[0].Lang != "spa" || tr.Audio[1].Idx != 1 {
+		t.Errorf("audio tracks: %+v", tr.Audio)
+	}
+	if len(tr.Subs) != 1 || tr.Subs[0].Lang != "spa" {
+		t.Errorf("sub tracks: %+v", tr.Subs)
 	}
 }

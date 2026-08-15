@@ -51,13 +51,9 @@ type cinemetaMeta struct {
 	ID          string `json:"id"`
 	Poster      string `json:"poster"`
 	Name        string `json:"name"`
-	ReleaseInfo string `json:"releaseInfo"` // "2023" or "2019-2022"
+	ReleaseInfo string `json:"releaseInfo"`
 }
 
-// cinemetaSearch finds the best movie/series match by title via Stremio's
-// Cinemeta (no key). kind is "movie" or "series". When year>0, a candidate
-// whose release year matches is preferred over the raw top hit — this fixes
-// wrong posters for remakes/same-title films. Returns poster URL and imdb id.
 func cinemetaSearch(kind, title string, year int) (poster, imdbID string, err error) {
 	var res struct {
 		Metas []cinemetaMeta `json:"metas"`
@@ -102,8 +98,8 @@ func cinemetaMetaFull(kind, imdbID string) (Meta, string, error) {
 			Runtime     string   `json:"runtime"`
 			Genres      []string `json:"genres"`
 			ImdbRating  string   `json:"imdbRating"`
-			Year        string   `json:"year"`        // "2008" or "2008–2013"
-			ReleaseInfo string   `json:"releaseInfo"` // same idea, fallback
+			Year        string   `json:"year"`
+			ReleaseInfo string   `json:"releaseInfo"`
 		} `json:"meta"`
 	}
 	u := fmt.Sprintf("https://v3-cinemeta.strem.io/meta/%s/%s.json", kind, imdbID)
@@ -127,9 +123,6 @@ func cinemetaMetaFull(kind, imdbID string) (Meta, string, error) {
 	}, res.Meta.Poster, nil
 }
 
-// itunesPoster is the keyless fallback for anything Cinemeta/Open Library miss.
-// Apple's iTunes Search API needs no key and covers movies, music and ebooks.
-// media is "movie", "music" or "ebook". Returns an upscaled artwork URL.
 func itunesPoster(media, term string) (poster string, err error) {
 	var res struct {
 		Results []struct {
@@ -143,12 +136,10 @@ func itunesPoster(media, term string) (poster string, err error) {
 	if len(res.Results) == 0 || res.Results[0].ArtworkURL100 == "" {
 		return "", nil
 	}
-	// 100px thumbnails upscale to 600px by swapping the size segment.
+
 	return strings.Replace(res.Results[0].ArtworkURL100, "100x100bb", "600x600bb", 1), nil
 }
 
-// bookQuery builds a clean Open Library query: author folder + the book title
-// with a leading "Surname, Name - " prefix stripped.
 func bookQuery(author, title string) string {
 	if i := strings.LastIndex(title, " - "); i >= 0 {
 		title = title[i+3:]
@@ -156,8 +147,6 @@ func bookQuery(author, title string) string {
 	return strings.TrimSpace(author + " " + title)
 }
 
-// openLibraryPoster finds a book cover by query, returning the poster URL and
-// the Open Library cover id (used later for a forced re-fetch).
 func openLibraryPoster(query string) (poster, coverID string, err error) {
 	var res struct {
 		Docs []struct {
@@ -175,26 +164,20 @@ func openLibraryPoster(query string) (poster, coverID string, err error) {
 	return fmt.Sprintf("https://covers.openlibrary.org/b/id/%s-L.jpg", id), id, nil
 }
 
-// SearchHit is one candidate for the watchlist search picker.
 type SearchHit struct {
-	Kind   string `json:"kind"`   // movie | series | book
+	Kind   string `json:"kind"`
 	Title  string `json:"title"`
-	Year   string `json:"year"`   // may be a range like "2019-2022"
-	Poster string `json:"poster"` // remote URL, shown in the picker
-	ExtID  string `json:"ext_id"` // imdb id / open-library cover id (for later enrich)
+	Year   string `json:"year"`
+	Poster string `json:"poster"`
+	ExtID  string `json:"ext_id"`
 }
 
-// searchTitles queries the free providers for ONLY the requested kinds, so a
-// search scoped to "book" never returns movies. movie/series → Cinemeta,
-// book → Open Library, audio → iTunes. Unknown/keyless kinds (game, other) have
-// no provider and are simply skipped (added manually in the UI). Errors from any
-// single provider are swallowed — a partial list beats no list.
 func searchTitles(q string, kinds []string) []SearchHit {
 	want := map[string]bool{}
 	for _, k := range kinds {
 		want[k] = true
 	}
-	if len(want) == 0 { // default: search everything with a provider
+	if len(want) == 0 {
 		want = map[string]bool{"movie": true, "series": true, "book": true, "audio": true, "game": true}
 	}
 	var out []SearchHit
@@ -245,11 +228,6 @@ func searchTitles(q string, kinds []string) []SearchHit {
 	}
 
 	if want["game"] {
-		// CheapShark — free, no key. Covers PC + console titles (Steam's own search
-		// misses Nintendo etc.). Its `thumb` is a wide 231×87 capsule that looks
-		// squashed in a poster tile, so when the game is on Steam we swap it for
-		// Steam's vertical library art (600×900). Needs a descriptive User-Agent,
-		// which getJSON already sends.
 		var games []struct {
 			GameID     string `json:"gameID"`
 			Name       string `json:"external"`
@@ -271,10 +249,10 @@ func searchTitles(q string, kinds []string) []SearchHit {
 	if want["audio"] {
 		var res struct {
 			Results []struct {
-				ArtistName    string `json:"artistName"`
+				ArtistName     string `json:"artistName"`
 				CollectionName string `json:"collectionName"`
-				ArtworkURL100 string `json:"artworkUrl100"`
-				ReleaseDate   string `json:"releaseDate"` // "2019-06-21T07:00:00Z"
+				ArtworkURL100  string `json:"artworkUrl100"`
+				ReleaseDate    string `json:"releaseDate"`
 			} `json:"results"`
 		}
 		u := "https://itunes.apple.com/search?media=music&entity=album&limit=6&term=" + url.QueryEscape(q)
@@ -297,8 +275,6 @@ func searchTitles(q string, kinds []string) []SearchHit {
 	return out
 }
 
-// coverArtPoster finds an album cover via MusicBrainz, returning the poster URL
-// and the release-group MBID (used later for a forced re-fetch).
 func coverArtPoster(artist, album string) (poster, mbid string, err error) {
 	q := fmt.Sprintf("release:%s", album)
 	if artist != "" {
@@ -319,18 +295,15 @@ func coverArtPoster(artist, album string) (poster, mbid string, err error) {
 	return fmt.Sprintf("https://coverartarchive.org/release-group/%s/front", mb.Groups[0].ID), mb.Groups[0].ID, nil
 }
 
-// Progress is the live state of a background run (scan or enrich), polled by
-// the UI. Total==0 while Running means an indeterminate run (the scanner does
-// not know the file count up front and won't waste a pass counting).
 type Progress struct {
 	mu      sync.Mutex
-	Running bool   `json:"running"`
-	stop    bool   // set by requestStop, checked each iteration
+	Running bool `json:"running"`
+	stop    bool
 	Total   int    `json:"total"`
 	Done    int    `json:"done"`
 	Found   int    `json:"found"`
 	LastID  int64  `json:"last_id"`
-	Phase   string `json:"phase"` // "scan" | "enrich" — labels the UI bar
+	Phase   string `json:"phase"`
 }
 
 func (p *Progress) snapshot() Progress {
@@ -348,10 +321,6 @@ func (p *Progress) requestStop() {
 var enrichProgress = &Progress{}
 var scanProgress = &Progress{}
 
-// fetchCover looks up and saves a cover (+ rich meta for video) for one item.
-// idOverride, if set, skips the search and uses that external id directly. The
-// id's meaning depends on kind: IMDb tt-id (video), Open Library cover id (book),
-// MusicBrainz release-group MBID (audio). Returns whether a cover was saved.
 func fetchCover(db *sql.DB, libraryKey string, it Item, idOverride string) bool {
 	var posterURL, extID string
 	var err error
@@ -366,8 +335,7 @@ func fetchCover(db *sql.DB, libraryKey string, it Item, idOverride string) bool 
 		if m, e := cinemetaDetail(cmKind, extID); e == nil {
 			posterURL = cinemetaPosterFor(cmKind, extID)
 			setMeta(db, libraryKey, it.ID, m, extID)
-			// manual identify by IMDb id → adopt the official title, fixing a
-			// mangled filename-derived one ("N0s0tros m1080p" → "Nosotros").
+
 			if m.Name != "" {
 				setTitle(db, libraryKey, it.ID, m.Name)
 			}
@@ -394,15 +362,14 @@ func fetchCover(db *sql.DB, libraryKey string, it Item, idOverride string) bool 
 		}
 	}
 	if extID != "" {
-		setImdbID(db, libraryKey, it.ID, extID) // persist whichever external id we used
+		setImdbID(db, libraryKey, it.ID, extID)
 	}
 
-	// Keyless fallback: if the primary source found no poster, try iTunes.
 	if posterURL == "" && idOverride == "" {
 		media := map[string]string{"video": "movie", "audio": "music", "book": "ebook"}[it.Kind]
 		term := it.Title
 		if it.Album != "" {
-			term = it.Album // series / album name is the better search term
+			term = it.Album
 		}
 		if p, e := itunesPoster(media, term); e == nil && p != "" {
 			posterURL = p
@@ -420,10 +387,6 @@ func fetchCover(db *sql.DB, libraryKey string, it Item, idOverride string) bool 
 	return setCover(db, libraryKey, it.ID, img) == nil
 }
 
-// fetchMetaOnly looks up an item's external id (and rich meta) WITHOUT touching
-// its cover — for files that already carry embedded artwork but have no id yet,
-// so the id field and its reference link work. Video/series pull Cinemeta detail;
-// audio just records the MusicBrainz release-group id.
 func fetchMetaOnly(db *sql.DB, libraryKey string, it Item) {
 	switch {
 	case it.Kind == "video":
@@ -450,9 +413,6 @@ func fetchMetaOnly(db *sql.DB, libraryKey string, it Item) {
 	}
 }
 
-// enrich fetches covers for a whole tab. pendingOnly is used by the startup
-// synchronizer so it only touches new or changed files. The UI can still
-// explicitly retry unresolved titles.
 func enrich(db *sql.DB, libraryKey, kind string, force, pendingOnly bool) (int, error) {
 	dbKind := kind
 	onlyGroups, onlyLoose := false, false
@@ -473,8 +433,7 @@ func enrich(db *sql.DB, libraryKey, kind string, force, pendingOnly bool) (int, 
 	var jobs []Item
 	doneGroups := map[string]bool{}
 	for _, it := range items {
-		// generic files (zip/iso/docs…) aren't identifiable media — enriching
-		// them just pulls unrelated book/movie posters. Never enrich them.
+
 		if it.Kind == "file" {
 			continue
 		}
@@ -482,9 +441,7 @@ func enrich(db *sql.DB, libraryKey, kind string, force, pendingOnly bool) (int, 
 			continue
 		}
 		if it.HasCover && !force {
-			// The file already carries artwork (embedded tags), so we won't refetch
-			// the cover. But if it has no external id yet, still look one up so the
-			// id field / references work — meta only, the cover is left untouched.
+
 			if (it.Kind == "audio" || it.Kind == "video") && it.ImdbID == "" && !onlyLoose {
 				if it.Album == "" || !doneGroups[it.Album] {
 					if it.Album != "" {
@@ -552,17 +509,12 @@ func enrich(db *sql.DB, libraryKey, kind string, force, pendingOnly bool) (int, 
 	enrichProgress.Running = false
 	enrichProgress.mu.Unlock()
 
-	// If an automatic (pendingOnly) pass ran to completion, settle everything
-	// still pending as not_found. Otherwise group members that never became a
-	// job, or items whose lookup found nothing, stay pending forever and re-run
-	// enrichment on every startup. A user-stopped run is left alone to retry.
 	if pendingOnly && !stopped {
 		_, _ = db.Exec(`UPDATE items SET enrich_state='not_found' WHERE library_key=? AND scan_state='present' AND enrich_state='pending'`, libraryKey)
 	}
 	return found, nil
 }
 
-// enrichOne re-fetches a single item, optionally forcing a specific imdb id.
 func enrichOne(db *sql.DB, libraryKey string, id int64, imdbID string) (bool, error) {
 	it, err := getItem(db, libraryKey, id)
 	if err != nil {

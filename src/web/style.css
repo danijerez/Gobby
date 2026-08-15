@@ -113,12 +113,14 @@ header {
 }
 .search:focus { border-color: var(--accent); }
 .search-field:focus-within .search-ic { color: var(--accent); }
-.search-clear {
-  position: absolute; right: 6px; background: none; border: 0; color: var(--muted);
-  cursor: pointer; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+.search-mic {
+  background: none; border: 0; color: var(--muted); cursor: pointer;
+  display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; flex: none; margin-right: 4px;
 }
-.search-clear:hover { color: var(--text); }
-.search-clear .ic { width: 16px; height: 16px; }
+.search-mic:hover { color: var(--text); }
+.search-mic svg { width: 17px; height: 17px; }
+.search-mic.listening { color: var(--focus); animation: micpulse 1s ease-in-out infinite; }
+@keyframes micpulse { 50% { opacity: .4; } }
 .spacer { flex: 1; }
 .root-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; font-family: ui-monospace, monospace; }
 .root-count { flex-shrink: 0; background: var(--surface-2); border-radius: 999px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
@@ -552,6 +554,13 @@ main, .watch { padding: 8px 22px; }
 }
 /* episode badge on a "continue" home card */
 .cont-badge { left: 8px; top: 8px; right: auto; background: var(--focus); color: #fff; }
+/* type badge on a watchlist card (movie/series/book/…) */
+.kind-badge { position: absolute; left: 6px; bottom: 6px; z-index: 2; display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(0,0,0,.7); color: #fff; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; }
+.kind-badge svg { width: 13px; height: 13px; }
+/* watched-progress bar along the bottom of a card */
+.prog { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(0,0,0,.55); z-index: 2; }
+.prog-fill { height: 100%; background: var(--focus); }
 
 .detail { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 32px; align-items: start; max-width: 1200px; }
 .detail-aside { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 90px; }
@@ -658,6 +667,29 @@ main, .watch { padding: 8px 22px; }
 .preview-pdf { width: 100%; height: 75vh; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
 .preview-audio { width: 100%; }
 .preview-img { max-width: 100%; max-height: 75vh; border-radius: 10px; border: 1px solid var(--line); display: block; }
+/* epub reader */
+.epub-reader { position: relative; display: flex; align-items: stretch; gap: 4px;
+  height: 75vh; border: 1px solid var(--line); border-radius: 10px; background: #fff; overflow: hidden; }
+.epub-viewer { flex: 1; min-width: 0; }
+.epub-nav { flex: none; width: 44px; background: none; border: 0; color: var(--muted);
+  cursor: pointer; display: grid; place-items: center; }
+.epub-nav:hover { color: var(--text); background: var(--surface-2); }
+.epub-nav svg { width: 22px; height: 22px; }
+.epub-reader:fullscreen { height: 100vh; border-radius: 0; }
+.epub-fs { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,.55); border: 0; color: #fff; cursor: pointer; width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; opacity: .5; }
+.epub-fs:hover { opacity: 1; }
+.epub-fs svg { width: 18px; height: 18px; }
+.epub-loading { position: absolute; inset: 0; display: grid; place-items: center; font-size: 28px; color: var(--muted); }
+/* Files: reveal + upload */
+.loc-dd { display: flex; align-items: center; gap: 8px; }
+.reveal-btn { flex: none; background: none; border: 0; color: var(--muted); cursor: pointer; display: grid; place-items: center; padding: 2px; border-radius: 6px; }
+.reveal-btn:hover { color: var(--focus); background: var(--surface-2); }
+.reveal-btn svg { width: 15px; height: 15px; }
+.tv-row.drop { outline: 2px dashed var(--focus); outline-offset: -2px; background: var(--surface-2); }
+.ctx-menu { position: fixed; z-index: 200; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.4); min-width: 160px; }
+.ctx-menu button { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: 0; color: var(--text); cursor: pointer; padding: 8px 10px; border-radius: 7px; font-size: 14px; text-align: left; }
+.ctx-menu button:hover { background: var(--surface-2); }
+.ctx-menu svg { width: 16px; height: 16px; flex: none; }
 
 /* custom video player */
 .vplayer { position: relative; background: #000; border-radius: 10px; overflow: hidden; line-height: 0; }

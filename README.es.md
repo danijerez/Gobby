@@ -28,7 +28,7 @@ música, libros y ficheros sueltos, los recuerda en un ordenado cajón SQLite, y
 abre dos puertas en **el mismo puerto**:
 
 - una **página web** para tu móvil o navegador (Gobby imprime un enlace y un QR en la terminal), y
-- un **servidor MCP** para que un mago listo como Claude Code pueda buscar en tu biblioteca.
+- un **servidor MCP** 🧙‍♂️ para que una **inteligencia suprema** pueda buscar en tu biblioteca.
 
 Gobby nunca *posee* nada. Gobby solo **explora** lo que ya tienes, **descarga** las
 pequeñas carátulas y detalles de servicios gratuitos, y — si se lo pides con
@@ -39,10 +39,10 @@ Tus pequeñas ediciones — títulos, notas, valoraciones, la lista de pendiente
 viven **solo en el cajón**. Gobby se plancharía las manos antes de tocar tus
 ficheros originales.
 
-> Hecho con **vibe coding** — Gobby se escribió de la mano de Claude, y luego se
-> revisó línea por línea. Un elfo libre y un mago listo, oh sí.
+> Hecho con **vibe coding** ✨ — Gobby se escribió de la mano de una **inteligencia
+> suprema**, y luego se revisó línea por línea. Un elfo libre y un mago listo, oh sí. 🧦🪄
 
-## Conseguir Gobby
+## Conseguir Gobby 📥
 
 Coge el binario para tu plataforma de la página de [Releases](https://github.com/danijerez/Gobby/releases)
 y déjalo en la carpeta donde quieras que viva. Eso es todo — un fichero, sin instalación.
@@ -54,7 +54,7 @@ prefieres poner el tuyo, deja un `ffmpeg` junto al binario de Gobby o ten uno en
 `PATH` y Gobby usará ese. Los demás formatos se descargan y se transmiten a la TV
 igual sin ffmpeg — solo que no se reproducen dentro del navegador.
 
-## Compilar
+## Compilar 🔨
 
 Necesita **Go 1.26+**. SQLite en Go puro (modernc) significa sin CGO y sin toolchain de C.
 
@@ -72,7 +72,7 @@ demuxers/decoders pero solo los encoders mp4/aac que Gobby usa de verdad:
 ./build/ffmpeg-slim/build.sh    # deja ffmpeg.exe junto al script
 ```
 
-## Cómo llamar a Gobby
+## Cómo llamar a Gobby 📣
 
 ```sh
 gobby                              # escanea junto al binario (o una carpeta arriba si está vacío)
@@ -86,7 +86,7 @@ Gobby imprime su nombre, versión y un enlace (con un QR) cuando despierta.
 
 Luego abre el enlace que Gobby imprime, o escanea el QR desde tu móvil. Misma casa, misma puerta.
 
-## Qué sabe hacer Gobby
+## Qué sabe hacer Gobby 🎬
 
 - **Escanea sin conexión** — lee nombres de fichero y etiquetas incrustadas, no necesita internet para catalogar.
 - **Descarga carátulas y detalles** — de servicios gratuitos y sin claves (ver abajo) cuando se lo pides.
@@ -99,14 +99,22 @@ Luego abre el enlace que Gobby imprime, o escanea el QR desde tu móvil. Misma c
 - **Elige el audio, pon subtítulos** — escoge una pista de audio y carga subtítulos
   incrustados como WebVTT (con tamaño, color y fondo ajustables), todo descodificado
   por el mismo pequeño ffmpeg.
-- **Acceso remoto** — un clic abre un **túnel Cloudflare** temporal (enlace público + QR).
+- **Retoma donde lo dejaste** — recuerda la posición de reproducción, con una barra de
+  progreso en el estante; al acabar un episodio **reproduce solo el siguiente** (música también).
+- **Reproductor con teclado** — espacio para pausar, ←/→ para saltar, `f` para pantalla completa.
+- **Lee epub en línea** — un lector paginado (epub.js) que recuerda tu página.
+- **Búsqueda por voz** — toca el micro y dicta tu búsqueda (donde el navegador lo soporte).
+- **Abrir y subir** (en el equipo que ejecuta Gobby) — abre la carpeta de un fichero en
+  tu explorador, o suelta un fichero en una carpeta desde la pestaña Ficheros.
+- **Acceso remoto** — un clic abre un **túnel Cloudflare** temporal (enlace público + QR),
+  protegido por una clave por túnel: una URL suelta por sí sola no llega a tu biblioteca.
 - **Transmite a la TV**, previsualiza PDF/audio/imágenes en línea, y un sonidito para cada toque.
 - **Solo lectura para invitados** — cualquiera que llegue por el túnel público puede mirar, no editar.
 - **Se actualiza solo** — desde la pantalla *Acerca de*, Gobby comprueba GitHub por
   una release más nueva y sustituye su propio binario (y ffmpeg) en el sitio.
   Reinicia y ya está nuevo.
 
-## Los servicios gratuitos que Gobby toma prestados (nunca claves)
+## Los servicios gratuitos que Gobby toma prestados (nunca claves) 🎁
 
 | Para | Servicio |
 | --- | --- |
@@ -118,20 +126,24 @@ Luego abre el enlace que Gobby imprime, o escanea el QR desde tu móvil. Misma c
 | Acceso remoto | Cloudflare Tunnel |
 | Transmitir a TV | Google Cast |
 
-## De qué está hecho Gobby
+## De qué está hecho Gobby 🧱
 
 Go · SQLite (modernc) · Alpine.js · [cuelume](https://github.com/Danilaa1/cuelume) (sonido) · MCP Go SDK · dhowden/tag · rsc.io/qr · un [ffmpeg](https://ffmpeg.org) slim (reproducción)
 
-## MCP — para los magos
+## MCP — para los magos 🧙
 
-Gobby expone un servidor MCP en `/mcp` en el mismo puerto. Añádelo y Claude podrá usar:
-`search_media`, `get_media`, `play_media`, `add_to_watchlist`, `list_watchlist`, `library_info`.
+Gobby expone un servidor MCP en `/mcp` en el mismo puerto. Añádelo y tu **inteligencia suprema** 🧙‍♂️ podrá:
+
+- **Explorar y buscar** — `search_media`, `get_media`, `browse_library`, `recent_media`, `library_info`
+- **Reproducir** — `play_media` (abre en el equipo servidor *y* devuelve un enlace web para verlo en cualquier dispositivo)
+- **Editar** — `update_media` (título/notas/valoración/…), `set_media_section`, `set_media_progress`, `enrich_media`
+- **Watchlist** — `search_titles`, `add_to_watchlist`, `list_watchlist`, `remove_from_watchlist`, `set_watchlist_done`
 
 ```sh
 claude mcp add --transport http gobby http://localhost:8420/mcp
 ```
 
-## Licencia y créditos
+## Licencia y créditos 📜
 
 El código propio de Gobby es **MIT** — ver [LICENSE](LICENSE). Las bibliotecas
 incluidas y el binario de ffmpeg mantienen sus propias licencias:
@@ -146,6 +158,8 @@ incluidas y el binario de ffmpeg mantienen sus propias licencias:
 | [MCP Go SDK](https://github.com/modelcontextprotocol/go-sdk), google/jsonschema-go, google/uuid | Apache-2.0 / BSD-3 | |
 | [Alpine.js](https://alpinejs.dev) | MIT | incluido en `src/web/` |
 | [cuelume](https://github.com/Danilaa1/cuelume) | MIT | sonidos de toque, incluido en `src/web/` |
+| [epub.js](https://github.com/futurepress/epub.js) | BSD-2-Clause | lector epub en línea, incluido en `src/web/` |
+| [JSZip](https://stuk.github.io/jszip/) | MIT | usado bajo MIT (JSZip es MIT-o-GPLv3); incluido en `src/web/` |
 
 **Logo:** el goblin es [«Goblin» de Caro Asercion](https://game-icons.net/1x1/caro-asercion/goblin.html),
 con licencia [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/deed.es), recoloreado y

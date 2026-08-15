@@ -55,8 +55,6 @@ func TestScanKeepsLibrariesSeparateAndMarksMissing(t *testing.T) {
 	}
 }
 
-// A moved/renamed file must keep its DB row (and your edits), not become a
-// missing ghost plus a fresh duplicate.
 func TestScanRematchesMovedFile(t *testing.T) {
 	tmp := t.TempDir()
 	db, err := openDB(filepath.Join(tmp, "gobby.db"))
@@ -85,7 +83,6 @@ func TestScanRematchesMovedFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Move the file to a new folder, preserving its modtime (as a real move does).
 	fi, _ := os.Stat(orig)
 	dst := filepath.Join(root, "movie.mkv")
 	if err := os.Rename(orig, dst); err != nil {

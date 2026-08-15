@@ -34,9 +34,10 @@
         <div class="search-field">
           <span class="search-ic" x-html="svg('search')"></span>
           <input class="search" x-ref="searchInput" type="search" :placeholder="t('search')"
-                 x-model="q" @input.debounce.250ms="runSearch()" @blur="searchBlur()"
-                 @keydown.escape="q=''; searchBlur()">
-          <button class="search-clear" @click="q=''; toggleSearch()" x-html="svg('back')"></button>
+                 x-model="q" @input.debounce.250ms="runSearch()"
+                 @keydown.escape="closeSearch()">
+          <button class="search-mic" x-show="voiceSupported" :class="{listening: listening}"
+                  @mousedown.prevent @click="voiceSearch()" :title="t('search')" x-html="svg('mic')"></button>
         </div>
       </template>
       <!-- filter funnel + the active-filter chips right beside it -->
@@ -172,6 +173,7 @@
                 <div class="art" :style="artStyle(it)"></div>
                 <template x-if="!it.has_cover"><div class="fallback"><span class="fb-ic" x-html="tabIcon(it.section==='music'?'audio':it.section)"></span><span class="fb-ttl" x-text="it.title"></span></div></template>
                 <span class="ep-badge cont-badge" x-show="epTag(it)" x-text="epTag(it)"></span>
+                <div class="prog" x-show="progressPct(it) > 0"><div class="prog-fill" :style="`width:${progressPct(it)}%`"></div></div>
               </div>
               <div class="meta"><div class="m-ttl" x-text="it.album || it.title"></div><div class="m-sub" x-text="epTag(it) ? t('continueAt') + ' ' + epTag(it) : (it.year || '')"></div></div>
             </div>
@@ -218,8 +220,12 @@
         </div>
         <div class="treeview">
           <template x-for="row in treeRows()" :key="row.n.path">
-            <div class="tv-row" :style="'padding-left:'+(row.depth*16+4)+'px'"
-                 @click="row.n.dir ? toggleNode(row.n.path) : openTreeLeaf(row.n)">
+            <div class="tv-row" :class="{drop: dropPath === row.n.path}" :style="'padding-left:'+(row.depth*16+4)+'px'"
+                 @click="row.n.dir ? toggleNode(row.n.path) : openTreeLeaf(row.n)"
+                 @contextmenu.prevent="info.local && treeMenu($event, row.n)"
+                 @dragover.prevent="info.local && row.n.dir && (dropPath = row.n.path)"
+                 @dragleave="dropPath === row.n.path && (dropPath = '')"
+                 @drop.prevent="info.local && row.n.dir && dropUpload($event, row.n.path)">
               <span class="tv-tw" x-show="row.n.dir" :class="{open: treeOpen[row.n.path]}" x-html="svg('chevron')"></span>
               <span class="tv-tw" x-show="!row.n.dir"></span>
               <span class="tv-ic" :style="'color:'+sectionColor(row.n.section)" x-html="svg(row.n.dir ? 'folder' : 'file')"></span>
@@ -232,6 +238,13 @@
         </div>
       </div>
     </template>
+
+    <div class="ctx-menu" x-show="ctx.open" @click.outside="ctx.open=false"
+         :style="`left:${ctx.x}px; top:${ctx.y}px`" x-transition style="display:none">
+      <button @click="reveal(ctx.node.path); ctx.open=false"><span x-html="svg('external')"></span> <span x-text="t('reveal')"></span></button>
+      <button x-show="ctx.node.dir" @click="pickUpload(ctx.node.path); ctx.open=false"><span x-html="svg('download')" style="transform:rotate(180deg)"></span> <span x-text="t('uploadHere')"></span></button>
+    </div>
+    <input type="file" x-ref="uploadInput" style="display:none" @change="doUpload($event)">
 
   </main>
 
@@ -422,7 +435,7 @@
             <button class="vplayer-close" @click="stopVideo()" title="Cerrar">&times;</button>
             <video x-ref="vplayer" class="vplayer-video" autoplay @mousemove="playerPoke()"
                    @click="togglePlay()" @dblclick="toggleFullscreen()"
-                   @play="playing=true" @pause="playing=false"></video>
+                   @play="playing=true" @pause="playing=false" @ended="onEnded()"></video>
             <!-- subtitles are parsed from VTT and painted here (native <track> is
                  unreliable over a piped stream); works for mkv, mp4 and fullscreen -->
             <div class="vplayer-subs" :class="{'sub-boxed': subCfg.boxed}"
@@ -498,6 +511,15 @@
             <template x-if="previewType(it) === 'pdf'"><embed class="preview-pdf" :src="streamURL(it)" type="application/pdf"></template>
             <template x-if="previewType(it) === 'audio'"><audio class="preview-audio" controls :src="streamURL(it)"></audio></template>
             <template x-if="previewType(it) === 'image'"><img class="preview-img" :src="streamURL(it)" :alt="it.title"></template>
+            <template x-if="previewType(it) === 'epub'">
+              <div class="epub-reader" x-ref="epubReader">
+                <button class="epub-nav prev" @click="epubPrev()" x-html="svg('back')" title="◀"></button>
+                <div id="epub-viewer" class="epub-viewer"></div>
+                <button class="epub-nav next" @click="epubNext()" x-html="svg('back')" style="transform:rotate(180deg)" title="▶"></button>
+                <button class="epub-fs" @click="epubFullscreen()" x-html="svg('fullscreen')" :title="t('fullscreen')"></button>
+                <div class="epub-loading" x-show="epubLoading" x-text="'…'"></div>
+              </div>
+            </template>
           </div>
 
           <dl class="facts">
@@ -507,7 +529,10 @@
             <template x-if="it.meta && it.meta.cast && it.meta.cast.length">
               <div class="fact"><dt><span x-html="svg('users')"></span> <span x-text="t('cast')"></span></dt><dd x-text="it.meta.cast.slice(0,8).join(', ')"></dd></div>
             </template>
-            <div class="fact"><dt><span x-html="svg('folder')"></span> <span x-text="t('location')"></span></dt><dd class="mono" x-text="it.rel_path"></dd></div>
+            <div class="fact"><dt><span x-html="svg('folder')"></span> <span x-text="t('location')"></span></dt>
+              <dd class="mono loc-dd"><span x-text="it.rel_path"></span>
+                <button class="reveal-btn" x-show="info.local" @click="reveal(it.rel_path)" :title="t('reveal')" x-html="svg('external')"></button>
+              </dd></div>
             <template x-if="metaSource(it)">
               <div class="fact"><dt><span x-html="svg('info')"></span> <span x-text="t('source')"></span></dt><dd x-text="metaSource(it)"></dd></div>
             </template>
@@ -598,7 +623,7 @@
     <p class="empty" x-show="!watch.length && !wresults.length && !wq.trim()" x-text="t('watchEmpty')"></p>
 
     <div class="grid" x-show="watch.length">
-      <template x-for="w in watch" :key="w.id">
+      <template x-for="w in filteredWatch()" :key="w.id">
         <div class="item" :class="{'watch-done': w.done}" tabindex="0" role="button" @click="openWatch(w)" @keydown.enter.prevent="openWatch(w)">
           <div class="case">
             <div class="art" :style="w.poster ? `background-image:url(${w.poster})` : 'display:none'"></div>
@@ -606,6 +631,7 @@
               <div class="fallback"><span class="fb-ic" x-html="watchIcon(w.kind)"></span><span class="fb-ttl" x-text="w.title"></span></div>
             </template>
             <span class="watch-check" x-show="w.done" x-html="svg('star')"></span>
+            <span class="kind-badge"><span x-html="watchIcon(w.kind)"></span> <span x-text="t(w.kind || 'other')"></span></span>
           </div>
           <div class="meta"><div class="m-ttl" x-text="w.title"></div><div class="m-sub" x-text="[t(w.kind), w.year].filter(Boolean).join(' · ')"></div></div>
         </div>
@@ -876,6 +902,8 @@
             <li><a href="https://go.dev" target="_blank" rel="noopener">Go</a><span x-text="t('dServer')"></span></li>
             <li><a href="https://alpinejs.dev" target="_blank" rel="noopener">Alpine.js</a><span x-text="t('dUI')"></span></li>
             <li><a href="https://github.com/Danilaa1/cuelume" target="_blank" rel="noopener">cuelume</a><span x-text="t('dSound')"></span></li>
+            <li><a href="https://github.com/futurepress/epub.js" target="_blank" rel="noopener">epub.js</a><span x-text="t('dEpub')"></span></li>
+            <li><a href="https://stuk.github.io/jszip/" target="_blank" rel="noopener">JSZip</a><span x-text="t('dZip')"></span></li>
             <li><a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">MCP Go SDK</a><span x-text="t('dMcp')"></span></li>
             <li><a href="https://pkg.go.dev/modernc.org/sqlite" target="_blank" rel="noopener">modernc.org/sqlite</a><span x-text="t('dDb')"></span></li>
             <li><a href="https://github.com/dhowden/tag" target="_blank" rel="noopener">dhowden/tag</a><span x-text="t('dTags')"></span></li>

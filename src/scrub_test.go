@@ -2,20 +2,18 @@ package main
 
 import "testing"
 
-// TestScrub locks the title/tech extraction against the messy real names that
-// motivated the truncate-at-first-marker approach.
 func TestScrub(t *testing.T) {
 	cases := []struct {
-		in, title      string
-		res, vcodec    string
-		acodec, chans  string
+		in, title     string
+		res, vcodec   string
+		acodec, chans string
 	}{
-		{"John.Wick.Chapter.4.2023.2160p.4K.WEB.x265.10bit.AAC5.1-[YTS.MX]", "John Wick Chapter 4", "2160P", "X265", "AAC", ""},
-		{"Alienoid 2022 1080p Korean WEB-DL HEVC x265 5.1 BONE", "Alienoid", "1080P", "HEVC", "", "5.1"},
-		{"Durante.La.Tormenta.2018.1080p.WEB-DL.MVO", "Durante La Tormenta", "1080P", "", "", ""},
-		{"Doctor.Strange.in.the.Multiverse.of.Madness.2022.1080p.WEB-DL.DDP5.1.Atmos.H.264-EVO", "Doctor Strange in the Multiverse of Madness", "1080P", "H.264", "EAC3", ""},
-		{"El Gigante de Hierro BD1080.[www.newpct1.com]", "El Gigante de Hierro", "", "", "", ""},
-		{"Men in Black International (2019) (4K-HD) (Spanish.English.Subs) HD 2160p x265-AC3-5.1 by Papa Noel", "Men in Black International", "4K", "X265", "AC3", "5.1"},
+		{"Sample.Movie.One.2023.2160p.4K.WEB.x265.10bit.AAC5.1-[GRP.XX]", "Sample Movie One", "2160P", "X265", "AAC", ""},
+		{"Sample Movie Two 2022 1080p Korean WEB-DL HEVC x265 5.1 GRP", "Sample Movie Two", "1080P", "HEVC", "", "5.1"},
+		{"Sample.Movie.Three.2018.1080p.WEB-DL.MVO", "Sample Movie Three", "1080P", "", "", ""},
+		{"Sample.Movie.In.The.Long.Title.2022.1080p.WEB-DL.DDP5.1.Atmos.H.264-GRP", "Sample Movie In The Long Title", "1080P", "H.264", "EAC3", ""},
+		{"Sample Movie Four BD1080.[www.example.com]", "Sample Movie Four", "", "", "", ""},
+		{"Sample Movie Five (2019) (4K-HD) (Spanish.English.Subs) HD 2160p x265-AC3-5.1 by Group", "Sample Movie Five", "4K", "X265", "AC3", "5.1"},
 	}
 	for _, c := range cases {
 		title, tech := scrub(c.in)

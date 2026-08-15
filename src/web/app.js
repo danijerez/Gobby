@@ -79,7 +79,7 @@ function gobby() {
         audio: 'Música', book: 'Libros', files: 'Ficheros', watch: 'Pendientes',
         albums: 'Álbumes', authors: 'Autores', movies: 'Películas', singles: 'Sueltos', folders: 'Carpetas', looseFiles: 'Sueltos', filesUnit: 'ficheros',
         empty: 'Nada por aquí todavía.', episodes: 'episodios', tracks: 'temas', books: 'libros',
-        title: 'Título', notes: 'Notas', rating: 'Valoración', location: 'Ubicación',
+        title: 'Título', notes: 'Notas', rating: 'Valoración', location: 'Ubicación', reveal: 'Abrir carpeta', uploadHere: 'Subir aquí',
         director: 'Dirección', cast: 'Reparto', back: 'Atrás', add: 'Añadir',
         enrichThemes: 'Buscar carátulas', theme: 'Cambiar tema', fetching: 'Buscando carátulas', sound: 'Sonido', language: 'Idioma',
         forceAll: 'Rebuscar todo (sobrescribe)', stop: 'Parar',
@@ -115,7 +115,7 @@ function gobby() {
         copy: 'Copiar', mcpUrl: 'URL del servidor', mcpCli: 'Con la CLI de Claude Code', mcpTools: 'Herramientas: search_media, get_media, play_media, add_to_watchlist, list_watchlist, library_info.',
         about: 'Acerca de', aboutDeps: 'Dependencias', aboutApis: 'APIs y servicios',
         updCheck: 'Buscar actualización', updChecking: 'Comprobando…', updLatest: 'Estás en la última versión', updNew: 'Nueva versión: {v}', updApply: 'Actualizar Gobby', updApplying: 'Actualizando…', updDone: 'Actualizado — reinicia Gobby para usar la nueva versión.', updFail: 'No se pudo actualizar',
-        dServer: 'servidor', dUI: 'interfaz', dSound: 'sonido', dMcp: 'servidor MCP', dDb: 'base de datos', dTags: 'metadatos de audio', dQr: 'códigos QR', dFfmpeg: 'vídeo, audio y subtítulos',
+        dServer: 'servidor', dUI: 'interfaz', dSound: 'sonido', dMcp: 'servidor MCP', dDb: 'base de datos', dTags: 'metadatos de audio', dQr: 'códigos QR', dFfmpeg: 'vídeo, audio y subtítulos', dEpub: 'lector de epub', dZip: 'lectura de zip',
         aMovies: 'pelis y series', aBooks: 'libros', aMusic: 'música', aMusicCovers: 'carátulas de música', aGames: 'juegos', aFallback: 'carátulas alt.', aRemote: 'acceso remoto', aCast: 'reproducir en TV',
       },
       en: {
@@ -123,7 +123,7 @@ function gobby() {
         audio: 'Music', book: 'Books', files: 'Files', watch: 'Watchlist',
         albums: 'Albums', authors: 'Authors', movies: 'Movies', singles: 'Singles', folders: 'Folders', looseFiles: 'Loose', filesUnit: 'files',
         empty: 'Nothing here yet.', episodes: 'episodes', tracks: 'tracks', books: 'books',
-        title: 'Title', notes: 'Notes', rating: 'Rating', location: 'Location',
+        title: 'Title', notes: 'Notes', rating: 'Rating', location: 'Location', reveal: 'Open folder', uploadHere: 'Upload here',
         director: 'Director', cast: 'Cast', back: 'Back', add: 'Add',
         enrichThemes: 'Fetch covers', theme: 'Toggle theme', fetching: 'Fetching covers', sound: 'Sound', language: 'Language',
         forceAll: 'Re-fetch all (overwrite)', stop: 'Stop',
@@ -159,7 +159,7 @@ function gobby() {
         copy: 'Copy', mcpUrl: 'Server URL', mcpCli: 'With the Claude Code CLI', mcpTools: 'Tools: search_media, get_media, play_media, add_to_watchlist, list_watchlist, library_info.',
         about: 'About', aboutDeps: 'Dependencies', aboutApis: 'APIs & services',
         updCheck: 'Check for update', updChecking: 'Checking…', updLatest: "You're on the latest version", updNew: 'New version: {v}', updApply: 'Update Gobby', updApplying: 'Updating…', updDone: 'Updated — restart Gobby to use the new version.', updFail: 'Update failed',
-        dServer: 'server', dUI: 'UI', dSound: 'sound', dMcp: 'MCP server', dDb: 'database', dTags: 'audio metadata', dQr: 'QR codes', dFfmpeg: 'video, audio & subtitles',
+        dServer: 'server', dUI: 'UI', dSound: 'sound', dMcp: 'MCP server', dDb: 'database', dTags: 'audio metadata', dQr: 'QR codes', dFfmpeg: 'video, audio & subtitles', dEpub: 'epub reader', dZip: 'zip reading',
         aMovies: 'movies & series', aBooks: 'books', aMusic: 'music', aMusicCovers: 'music covers', aGames: 'games', aFallback: 'fallback covers', aRemote: 'remote access', aCast: 'cast to TV',
       },
       fr: {
@@ -167,7 +167,7 @@ function gobby() {
         audio: 'Musique', book: 'Livres', files: 'Fichiers', watch: 'À voir',
         albums: 'Albums', authors: 'Auteurs', movies: 'Films', singles: 'Isolés', folders: 'Dossiers', looseFiles: 'Isolés', filesUnit: 'fichiers',
         empty: 'Rien ici pour le moment.', episodes: 'épisodes', tracks: 'pistes', books: 'livres',
-        title: 'Titre', notes: 'Notes', rating: 'Note', location: 'Emplacement',
+        title: 'Titre', notes: 'Notes', rating: 'Note', location: 'Emplacement', reveal: 'Ouvrir le dossier', uploadHere: 'Téléverser ici',
         director: 'Réalisation', cast: 'Distribution', back: 'Retour', add: 'Ajouter',
         enrichThemes: 'Chercher les jaquettes', theme: 'Changer de thème', fetching: 'Recherche des jaquettes', sound: 'Son', language: 'Langue',
         forceAll: 'Tout rechercher (écrase)', stop: 'Arrêter',
@@ -203,7 +203,7 @@ function gobby() {
         copy: 'Copier', mcpUrl: 'URL du serveur', mcpCli: 'Avec la CLI de Claude Code', mcpTools: 'Outils : search_media, get_media, play_media, add_to_watchlist, list_watchlist, library_info.',
         about: 'À propos', aboutDeps: 'Dépendances', aboutApis: 'API et services',
         updCheck: 'Chercher une mise à jour', updChecking: 'Vérification…', updLatest: 'Vous avez la dernière version', updNew: 'Nouvelle version : {v}', updApply: 'Mettre à jour Gobby', updApplying: 'Mise à jour…', updDone: 'Mis à jour — redémarrez Gobby pour utiliser la nouvelle version.', updFail: 'Échec de la mise à jour',
-        dServer: 'serveur', dUI: 'interface', dSound: 'son', dMcp: 'serveur MCP', dDb: 'base de données', dTags: 'métadonnées audio', dQr: 'codes QR', dFfmpeg: 'vidéo, audio et sous-titres',
+        dServer: 'serveur', dUI: 'interface', dSound: 'son', dMcp: 'serveur MCP', dDb: 'base de données', dTags: 'métadonnées audio', dQr: 'codes QR', dFfmpeg: 'vidéo, audio et sous-titres', dEpub: 'lecteur epub', dZip: 'lecture zip',
         aMovies: 'films et séries', aBooks: 'livres', aMusic: 'musique', aMusicCovers: 'jaquettes musique', aGames: 'jeux', aFallback: 'jaquettes de secours', aRemote: 'accès distant', aCast: 'diffuser sur TV',
       },
       de: {
@@ -211,7 +211,7 @@ function gobby() {
         audio: 'Musik', book: 'Bücher', files: 'Dateien', watch: 'Merkliste',
         albums: 'Alben', authors: 'Autoren', movies: 'Filme', singles: 'Einzeln', folders: 'Ordner', looseFiles: 'Einzeln', filesUnit: 'Dateien',
         empty: 'Hier ist noch nichts.', episodes: 'Folgen', tracks: 'Titel', books: 'Bücher',
-        title: 'Titel', notes: 'Notizen', rating: 'Bewertung', location: 'Speicherort',
+        title: 'Titel', notes: 'Notizen', rating: 'Bewertung', location: 'Speicherort', reveal: 'Ordner öffnen', uploadHere: 'Hier hochladen',
         director: 'Regie', cast: 'Besetzung', back: 'Zurück', add: 'Hinzufügen',
         enrichThemes: 'Cover suchen', theme: 'Thema wechseln', fetching: 'Cover werden gesucht', sound: 'Ton', language: 'Sprache',
         forceAll: 'Alles neu suchen (überschreibt)', stop: 'Stopp',
@@ -247,7 +247,7 @@ function gobby() {
         copy: 'Kopieren', mcpUrl: 'Server-URL', mcpCli: 'Mit der Claude-Code-CLI', mcpTools: 'Werkzeuge: search_media, get_media, play_media, add_to_watchlist, list_watchlist, library_info.',
         about: 'Über', aboutDeps: 'Abhängigkeiten', aboutApis: 'APIs & Dienste',
         updCheck: 'Nach Update suchen', updChecking: 'Wird geprüft…', updLatest: 'Du hast die neueste Version', updNew: 'Neue Version: {v}', updApply: 'Gobby aktualisieren', updApplying: 'Wird aktualisiert…', updDone: 'Aktualisiert — starte Gobby neu, um die neue Version zu nutzen.', updFail: 'Update fehlgeschlagen',
-        dServer: 'Server', dUI: 'Oberfläche', dSound: 'Ton', dMcp: 'MCP-Server', dDb: 'Datenbank', dTags: 'Audio-Metadaten', dQr: 'QR-Codes', dFfmpeg: 'Video, Audio & Untertitel',
+        dServer: 'Server', dUI: 'Oberfläche', dSound: 'Ton', dMcp: 'MCP-Server', dDb: 'Datenbank', dTags: 'Audio-Metadaten', dQr: 'QR-Codes', dFfmpeg: 'Video, Audio & Untertitel', dEpub: 'epub-Leser', dZip: 'zip-Lesen',
         aMovies: 'Filme & Serien', aBooks: 'Bücher', aMusic: 'Musik', aMusicCovers: 'Musik-Cover', aGames: 'Spiele', aFallback: 'Ersatz-Cover', aRemote: 'Fernzugriff', aCast: 'auf TV streamen',
       },
       it: {
@@ -255,7 +255,7 @@ function gobby() {
         audio: 'Musica', book: 'Libri', files: 'File', watch: 'Da vedere',
         albums: 'Album', authors: 'Autori', movies: 'Film', singles: 'Sciolti', folders: 'Cartelle', looseFiles: 'Sciolti', filesUnit: 'file',
         empty: 'Qui non c’è ancora niente.', episodes: 'episodi', tracks: 'tracce', books: 'libri',
-        title: 'Titolo', notes: 'Note', rating: 'Valutazione', location: 'Posizione',
+        title: 'Titolo', notes: 'Note', rating: 'Valutazione', location: 'Posizione', reveal: 'Apri cartella', uploadHere: 'Carica qui',
         director: 'Regia', cast: 'Cast', back: 'Indietro', add: 'Aggiungi',
         enrichThemes: 'Cerca copertine', theme: 'Cambia tema', fetching: 'Ricerca copertine', sound: 'Suono', language: 'Lingua',
         forceAll: 'Ricerca tutto (sovrascrive)', stop: 'Ferma',
@@ -291,7 +291,7 @@ function gobby() {
         copy: 'Copia', mcpUrl: 'URL del server', mcpCli: 'Con la CLI di Claude Code', mcpTools: 'Strumenti: search_media, get_media, play_media, add_to_watchlist, list_watchlist, library_info.',
         about: 'Info', aboutDeps: 'Dipendenze', aboutApis: 'API e servizi',
         updCheck: 'Cerca aggiornamenti', updChecking: 'Controllo…', updLatest: 'Hai la versione più recente', updNew: 'Nuova versione: {v}', updApply: 'Aggiorna Gobby', updApplying: 'Aggiornamento…', updDone: 'Aggiornato — riavvia Gobby per usare la nuova versione.', updFail: 'Aggiornamento non riuscito',
-        dServer: 'server', dUI: 'interfaccia', dSound: 'suono', dMcp: 'server MCP', dDb: 'database', dTags: 'metadati audio', dQr: 'codici QR', dFfmpeg: 'video, audio e sottotitoli',
+        dServer: 'server', dUI: 'interfaccia', dSound: 'suono', dMcp: 'server MCP', dDb: 'database', dTags: 'metadati audio', dQr: 'codici QR', dFfmpeg: 'video, audio e sottotitoli', dEpub: 'lettore epub', dZip: 'lettura zip',
         aMovies: 'film e serie', aBooks: 'libri', aMusic: 'musica', aMusicCovers: 'copertine musica', aGames: 'giochi', aFallback: 'copertine di riserva', aRemote: 'accesso remoto', aCast: 'trasmetti in TV',
       },
       pt: {
@@ -299,7 +299,7 @@ function gobby() {
         audio: 'Música', book: 'Livros', files: 'Ficheiros', watch: 'Para ver',
         albums: 'Álbuns', authors: 'Autores', movies: 'Filmes', singles: 'Soltos', folders: 'Pastas', looseFiles: 'Soltos', filesUnit: 'ficheiros',
         empty: 'Ainda não há nada aqui.', episodes: 'episódios', tracks: 'faixas', books: 'livros',
-        title: 'Título', notes: 'Notas', rating: 'Avaliação', location: 'Localização',
+        title: 'Título', notes: 'Notas', rating: 'Avaliação', location: 'Localização', reveal: 'Abrir pasta', uploadHere: 'Enviar aqui',
         director: 'Realização', cast: 'Elenco', back: 'Voltar', add: 'Adicionar',
         enrichThemes: 'Procurar capas', theme: 'Mudar tema', fetching: 'A procurar capas', sound: 'Som', language: 'Idioma',
         forceAll: 'Procurar tudo (substitui)', stop: 'Parar',
@@ -335,7 +335,7 @@ function gobby() {
         copy: 'Copiar', mcpUrl: 'URL do servidor', mcpCli: 'Com a CLI do Claude Code', mcpTools: 'Ferramentas: search_media, get_media, play_media, add_to_watchlist, list_watchlist, library_info.',
         about: 'Acerca', aboutDeps: 'Dependências', aboutApis: 'APIs e serviços',
         updCheck: 'Procurar atualização', updChecking: 'A verificar…', updLatest: 'Tem a versão mais recente', updNew: 'Nova versão: {v}', updApply: 'Atualizar o Gobby', updApplying: 'A atualizar…', updDone: 'Atualizado — reinicie o Gobby para usar a nova versão.', updFail: 'Falha na atualização',
-        dServer: 'servidor', dUI: 'interface', dSound: 'som', dMcp: 'servidor MCP', dDb: 'base de dados', dTags: 'metadados de áudio', dQr: 'códigos QR', dFfmpeg: 'vídeo, áudio e legendas',
+        dServer: 'servidor', dUI: 'interface', dSound: 'som', dMcp: 'servidor MCP', dDb: 'base de dados', dTags: 'metadados de áudio', dQr: 'códigos QR', dFfmpeg: 'vídeo, áudio e legendas', dEpub: 'leitor epub', dZip: 'leitura zip',
         aMovies: 'filmes e séries', aBooks: 'livros', aMusic: 'música', aMusicCovers: 'capas de música', aGames: 'jogos', aFallback: 'capas alternativas', aRemote: 'acesso remoto', aCast: 'transmitir para TV',
       },
     },
@@ -362,6 +362,8 @@ function gobby() {
       this.loadSubCfg();
       this.openFromHash(); // deep-link: #item/<id> opens that item on load
       window.addEventListener('hashchange', () => this.openFromHash());
+      window.addEventListener('keydown', (e) => this._onPlayerKey(e));
+      document.addEventListener('click', (e) => this._onDocClick(e));
       this.watchBackend();
     },
 
@@ -396,7 +398,8 @@ function gobby() {
       if (!m) return;
       if (this.top.view === 'item' && this.top.item && String(this.top.item.id) === m[1]) return;
       const r = await fetch('/api/item/' + m[1]);
-      if (r.ok) this.stack.push({ view: 'item', item: await r.json() });
+      // pushView (not stack.push) so a deep-linked item gets a history entry to pop
+      if (r.ok) this.pushView({ view: 'item', item: await r.json() });
     },
 
     // ---- UI sound feedback (cuelume, vendored — synthesized, no assets) ----
@@ -615,6 +618,7 @@ function gobby() {
     svg(name) {
       const p = {
         search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+        mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/>',
         sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>',
         moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
         palette: '<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1-.3-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-4.9-4.5-9-10-9Z"/>',
@@ -709,7 +713,8 @@ function gobby() {
     goTab(tab) {
       this.tab = tab;
       this.stack = [{ view: 'home' }];
-      history.replaceState({ gobby: true }, '');
+      // strip a residual #item hash, else back onto this entry reopens the old item
+      history.replaceState({ gobby: true }, '', location.pathname + location.search);
       if (tab === 'watch') this.loadWatch();
       else if (tab === 'home') this.loadHome();
       else if (tab === 'files') this.goFiles();
@@ -760,6 +765,37 @@ function gobby() {
     treeTotal() { return this.tree ? this.fmtSize(this.tree.size) : '—'; },
     treeCount() { return this.tree ? this.tree.count : 0; },
     openTreeLeaf(n) { if (n.id) this.openItem({ id: n.id }); },
+    // ---- Files: reveal + upload (host-only; buttons hidden unless info.local) ----
+    ctx: { open: false, x: 0, y: 0, node: {} },
+    dropPath: '',
+    _uploadDir: '',
+    async reveal(path) {
+      await fetch('/api/reveal', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path }),
+      }).catch(() => {});
+    },
+    treeMenu(e, node) {
+      this.ctx = { open: true, x: e.clientX, y: e.clientY, node };
+    },
+    pickUpload(dir) { this._uploadDir = dir; this.$refs.uploadInput.click(); },
+    doUpload(e) {
+      const f = e.target.files && e.target.files[0];
+      if (f) this._sendUpload(this._uploadDir, f);
+      e.target.value = '';
+    },
+    dropUpload(e, dir) {
+      this.dropPath = '';
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) this._sendUpload(dir, f);
+    },
+    async _sendUpload(dir, file) {
+      const fd = new FormData();
+      fd.append('dir', dir);
+      fd.append('file', file);
+      const r = await fetch('/api/upload', { method: 'POST', body: fd }).catch(() => null);
+      if (r && r.ok) setTimeout(() => this.loadTree(), 800);
+    },
     // Treemap strips for the top level: width ∝ size, color by content section.
     treemap() {
       const kids = (this.tree && this.tree.children) || [];
@@ -819,7 +855,9 @@ function gobby() {
       history.pushState({ gobby: true }, '', hash || location.pathname);
     },
     back() {
-      if (this.stack.length > 1) { this.stack.pop(); history.back(); }
+      // history.back() fires popstate, which does the single stack.pop() — popping
+      // here too would double-pop and skip a view.
+      if (this.stack.length > 1) history.back();
     },
 
     page: 1,
@@ -868,6 +906,7 @@ function gobby() {
 
     async openItem(it) {
       this.previewing = false;
+      this.closeEpub();
       this.stopVideo();
       this.editId = false; // starts locked so the id can't be edited by accident
       const r = await fetch(`/api/item/${it.id}`);
@@ -882,8 +921,33 @@ function gobby() {
       if (this.searchOpen) { this.$nextTick(() => this.$refs.searchInput && this.$refs.searchInput.focus()); }
       else { this.q = ''; this.searchResults = []; }
     },
-    // Collapse back to the magnifier when the field is emptied and loses focus.
-    searchBlur() { if (!this.q) { this.searchOpen = false; this.searchResults = []; } },
+    closeSearch() { this.searchOpen = false; this.q = ''; this.searchResults = []; },
+    // click anywhere outside the search header AND outside the results view closes it.
+    // Uses the click target's ancestry, so a click ON a result still opens it first.
+    _onDocClick(e) {
+      if (!this.searchOpen) return;
+      if (e.target.closest('.search-wrap') || e.target.closest('.search-view')) return;
+      this.closeSearch();
+    },
+    // ---- voice search (Web Speech API) ----
+    get voiceSupported() { return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window; },
+    listening: false,
+    voiceSearch() {
+      if (this.listening) { this._rec && this._rec.stop(); return; }
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return;
+      const rec = this._rec = new SR();
+      rec.lang = { es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', pt: 'pt-PT' }[this.lang] || 'es-ES';
+      rec.interimResults = true;
+      rec.onstart = () => { this.listening = true; };
+      rec.onend = () => { this.listening = false; };
+      rec.onerror = () => { this.listening = false; };
+      rec.onresult = (e) => {
+        this.q = Array.from(e.results).map(r => r[0].transcript).join('');
+        this.runSearch();
+      };
+      rec.start();
+    },
     async runSearch() {
       const q = this.q.trim();
       if (!q) { this.searchResults = []; return; }
@@ -1045,24 +1109,84 @@ function gobby() {
         this.markOpened(item);
       } catch (e) { /* user cancelled or no device */ }
     },
-    // native OS share sheet — hand the stream link to WhatsApp/Telegram/email/etc
-    // on another device, no QR camera or manual IP typing needed.
+    // native share sheet; tunnel deep-link (with key) if public, else LAN stream
     async share(item) {
-      const url = this.absStream(item);
+      const url = this.shareURL(item);
       try { await navigator.share({ title: item.title, url }); this.markOpened(item); }
-      catch (e) { /* user cancelled or unsupported */ }
+      catch (e) { this.copyText(url, 'share'); }
+    },
+    shareURL(item) {
+      if (this.tun && this.tun.url) return this.tun.url + '#item/' + item.id;
+      return this.absStream(item);
     },
     // what the browser can render inline in the detail page, by extension
     ext(item) { const m = (item.rel_path || '').match(/\.([^.]+)$/); return m ? m[1].toLowerCase() : ''; },
     previewType(item) {
       const e = this.ext(item);
       if (e === 'pdf') return 'pdf';
+      if (e === 'epub') return 'epub';
       if (['mp3', 'm4a', 'ogg', 'wav', 'flac', 'aac'].includes(e)) return 'audio';
       if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp', 'svg'].includes(e)) return 'image';
       return '';
     },
     previewing: false,
-    togglePreview() { this.previewing = !this.previewing; },
+    togglePreview() {
+      this.previewing = !this.previewing;
+      if (this.previewing && this.previewType(this.top.item) === 'epub') {
+        this.$nextTick(() => this.openEpub(this.top.item));
+      } else {
+        this.closeEpub();
+      }
+    },
+    // ---- epub reader (epub.js + jszip, vendored, loaded on demand) ----
+    epubLoading: false,
+    _epubScriptsLoaded: false,
+    async _loadEpubLibs() {
+      if (this._epubScriptsLoaded) return;
+      const add = (src) => new Promise((ok, err) => {
+        const s = document.createElement('script');
+        s.src = src; s.onload = ok; s.onerror = err;
+        document.head.appendChild(s);
+      });
+      await add('/jszip.min.js');
+      await add('/epub.min.js');
+      this._epubScriptsLoaded = true;
+    },
+    async openEpub(item) {
+      this.closeEpub();
+      this.epubLoading = true;
+      try {
+        await this._loadEpubLibs();
+        // Fetch as ArrayBuffer: the stream URL has no .epub extension, so epub.js
+        // can't infer the type from it and would hang. A buffer is unambiguous.
+        const buf = await (await fetch(this.streamURL(item))).arrayBuffer();
+        const book = window.ePub(buf);
+        this._epubBook = book;
+        this._epubRend = book.renderTo('epub-viewer', { width: '100%', height: '100%', flow: 'paginated' });
+        // resume at the saved reading location (CFI) per item
+        const loc = localStorage.getItem('gobby-epub-' + item.id);
+        await this._epubRend.display(loc || undefined);
+        this._epubRend.on('relocated', (l) => {
+          if (l && l.start) localStorage.setItem('gobby-epub-' + item.id, l.start.cfi);
+        });
+        if (!this._epubFsHooked) {
+          this._epubFsHooked = true;
+          document.addEventListener('fullscreenchange', () => this._epubRend && this._epubRend.resize());
+        }
+      } catch (e) { /* unreadable epub */ }
+      this.epubLoading = false;
+    },
+    epubPrev() { this._epubRend && this._epubRend.prev(); },
+    epubNext() { this._epubRend && this._epubRend.next(); },
+    epubFullscreen() {
+      const el = this.$refs.epubReader;
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (el && el.requestFullscreen) el.requestFullscreen();
+    },
+    closeEpub() {
+      if (this._epubBook) { try { this._epubBook.destroy(); } catch (e) {} }
+      this._epubBook = null; this._epubRend = null;
+    },
 
     // mkv/avi go through the server-side ffmpeg remux, whose piped fragmented mp4
     // can't seek by byte-range — so we drive playback + seek ourselves.
@@ -1109,10 +1233,19 @@ function gobby() {
       this.audioTracks = [];
       this.subTracks = [];
       this._playItem = item;
+      this._advancing = false;
       this.playerPoke();
       this.markOpened(item);
-      this._loadVideo(0);
+      // resume: saved position, unless in the intro or near the end
+      let startAt = 0;
+      const p = item.progress || 0, d = item.duration || 0;
+      if (p > 30 && (!d || p < d * 0.9)) startAt = p;
+      this.seekVal = startAt;
+      this._loadVideo(startAt);
       const v = this.$refs.vplayer;
+      if (startAt > 0 && !this.videoRemux) {
+        v.addEventListener('loadedmetadata', () => { v.currentTime = startAt; }, { once: true });
+      }
       if (!this.videoRemux) {
         v.onloadedmetadata = () => { this.videoDur = Math.floor(v.duration || 0); };
       }
@@ -1155,6 +1288,9 @@ function gobby() {
         const t = (this.videoRemux ? this._seekBase : 0) + v.currentTime;
         this.seekVal = Math.floor(t);
         this._updateSub(t);
+        if (!v.paused && this.seekVal - (this._savedAt || 0) >= 10) this._saveProgress(this.seekVal);
+        // remux streams don't always fire @ended reliably; catch it here too
+        if (this.videoRemux && v.ended && this.videoDur && t >= this.videoDur - 1.5) this.onEnded();
       }, 200);
       // Pin the current height before reloading so the box doesn't collapse to a
       // sliver while the new stream buffers (which made the whole player jump).
@@ -1242,19 +1378,48 @@ function gobby() {
       if (v.paused) v.play().catch(() => {}); else v.pause();
       this.playerPoke();
     },
+    // playback finished → mark watched + auto-advance to the next album item
+    async onEnded() {
+      const item = this._playItem;
+      if (!item || this._advancing) return;
+      this._advancing = true;
+      if (this.videoDur) this._saveProgress(this.videoDur);
+      try {
+        const r = await fetch(`/api/item/${item.id}/next`);
+        const next = r.ok ? await r.json() : null;
+        if (next && next.id) { this.playHere(next); return; }
+      } catch (e) {}
+      this._advancing = false;
+      this.stopVideo();
+    },
+    // keyboard controls while the player is open: space play/pause, ←/→ seek, f fullscreen
+    _onPlayerKey(e) {
+      if (!this.videoOpen) return;
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+      const rel = (d) => this.seekTo(Math.max(0, Math.min(this.videoDur || 1e9, this.seekVal + d)));
+      switch (e.key) {
+        case ' ': case 'k': e.preventDefault(); this.togglePlay(); break;
+        case 'ArrowRight': e.preventDefault(); rel(10); break;
+        case 'ArrowLeft': e.preventDefault(); rel(-10); break;
+        case 'f': this.toggleFullscreen(); break;
+        case 'Escape': if (!document.fullscreenElement) this.stopVideo(); break;
+      }
+    },
+    // seek to an absolute second (shared by the bar click and keyboard)
+    seekTo(t) {
+      t = Math.floor(t);
+      this.seekVal = t;
+      if (this.videoRemux) this._loadVideo(t);
+      else this.$refs.vplayer.currentTime = t;
+      this.playerPoke();
+    },
     // click on the seek bar → seek to that fraction.
     seekClick(e) {
       if (!this.videoDur) return;
       const box = this.$refs.seekbox.getBoundingClientRect();
       const frac = Math.min(1, Math.max(0, (e.clientX - box.left) / box.width));
-      const t = Math.floor(frac * this.videoDur);
-      this.seekVal = t;
-      if (this.videoRemux) {
-        this._loadVideo(t); // reload remux from t (keeps current audio track)
-      } else {
-        this.$refs.vplayer.currentTime = t; // native seek
-      }
-      this.playerPoke();
+      this.seekTo(frac * this.videoDur);
     },
     toggleFullscreen() {
       const el = this.$refs.vplayer.closest('.vplayer');
@@ -1276,6 +1441,12 @@ function gobby() {
       if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) {} }
       const v = this.$refs && this.$refs.vplayer;
       clearInterval(this._tick);
+      // flush final position; near the end snap to duration so it reads as watched
+      if (this._playItem && this.seekVal > 5) {
+        const d = this.videoDur || this._playItem.duration || 0;
+        this._saveProgress(d && this.seekVal >= d * 0.9 ? d : this.seekVal);
+      }
+      this._savedAt = 0;
       if (v) { v.pause(); v.onloadedmetadata = null; v.removeAttribute('src'); v.load(); }
       clearTimeout(this._ctrlTimer);
       this.videoOpen = false;
@@ -1300,6 +1471,19 @@ function gobby() {
     },
     // record an explicit open (play/preview/open-with) so it shows in "continue".
     markOpened(item) { fetch(`/api/item/${item.id}/opened`, { method: 'POST' }).catch(() => {}); },
+    // percent watched for the card bar; 0 hides it
+    progressPct(it) {
+      const p = it.progress || 0, d = it.duration || 0;
+      if (!d || p <= 0) return 0;
+      return Math.min(100, Math.round(p / d * 100));
+    },
+    _saveProgress(secs) {
+      const item = this._playItem;
+      if (!item) return;
+      this._savedAt = secs;
+      item.progress = secs;
+      fetch(`/api/item/${item.id}/opened?t=${secs}`, { method: 'POST' }).catch(() => {});
+    },
     streamURL(item) { return `/api/item/${item.id}/stream`; },
     absStream(item) { return (this.info.base || '') + `/api/item/${item.id}/stream`; },
     isAndroid() { return /android/i.test(navigator.userAgent); },
@@ -1491,8 +1675,8 @@ function gobby() {
     wq: '',
     wresults: [],
     wsearching: false,
-    // active type filters — decide which APIs the search hits. Series on by default.
-    searchKinds: ['series'],
+    // active type chips: filter the saved list AND scope the online search. None = all.
+    searchKinds: [],
     newWatchNote: '',
     // which watchlist types have an online provider (the rest are manual-only)
     onlineKinds: ['movie', 'series', 'book', 'audio', 'game'],
@@ -1504,10 +1688,16 @@ function gobby() {
       this.searchWatch();
     },
     kindOn(k) { return this.searchKinds.includes(k); },
+    // the type chips double as a filter of the saved list: none active = show all
+    filteredWatch() {
+      if (!this.searchKinds.length) return this.watch;
+      return this.watch.filter(w => this.searchKinds.includes(w.kind || 'other'));
+    },
     async searchWatch() {
       const q = this.wq.trim();
-      // only the active types that actually have an online provider get searched
-      const kinds = this.searchKinds.filter(k => this.onlineKinds.includes(k));
+      // no chips active = search every online provider; else only the active ones
+      const active = this.searchKinds.length ? this.searchKinds : this.onlineKinds;
+      const kinds = active.filter(k => this.onlineKinds.includes(k));
       if (!q || !kinds.length) { this.wresults = []; return; }
       this.wsearching = true;
       try {

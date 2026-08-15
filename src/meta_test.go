@@ -14,27 +14,21 @@ func TestParseName(t *testing.T) {
 		season  int
 		episode int
 	}{
-		// Movies with release junk (real mock names from the test USB).
-		{`D:\films\(1940) - Pinocho Bdrip 1080P Hevc 10B-Ac3 By Byp58.mkv`, "Pinocho", 1940, "", 0, 0},
-		{`D:\films\28 Dias Despues [www.newpct.com][toni32].mkv`, "28 Dias Despues", 0, "", 0, 0},
-		{`D:\films\101.Dalmatas.(1961)(Spanish.English.Subs).HD.1080p.x264-AC3.by.Geot.mkv`, "101 Dalmatas", 1961, "", 0, 0},
-		// Title truncates at the first release marker, so trailing groups (BONE) never reach it.
-		{`D:\films\Alienoid 2022 1080p Korean WEB-DL HEVC x265 5.1 BONE.mkv`, "Alienoid", 2022, "", 0, 0},
 
-		// Glued release suffix Mxxxx / 1Mxxxx.
-		{`D:\films\OblivionM1080.mkv`, "Oblivion", 0, "", 0, 0},
-		{`D:\films\Atlantis1M1080.www.newpct.com.mkv`, "Atlantis", 0, "", 0, 0},
-		{`D:\films\planetatesoroM1080.mkv`, "planetatesoro", 0, "", 0, 0},
+		{`films/(1940) - Sample Movie Bdrip 1080P Hevc 10B-Ac3 By Grp99.mkv`, "Sample Movie", 1940, "", 0, 0},
+		{`films/Example Title [www.example.com][tag01].mkv`, "Example Title", 0, "", 0, 0},
+		{`films/Some.Film.(1961)(Spanish.English.Subs).HD.1080p.x264-AC3.by.Grp.mkv`, "Some Film", 1961, "", 0, 0},
+		{`films/Another Movie 2022 1080p Korean WEB-DL HEVC x265 5.1 GRP.mkv`, "Another Movie", 2022, "", 0, 0},
+		{`films/GluedTitleM1080.mkv`, "GluedTitle", 0, "", 0, 0},
+		{`films/SecondTitle1M1080.www.example.com.mkv`, "SecondTitle", 0, "", 0, 0},
+		{`films/thirdtitleM1080.mkv`, "thirdtitle", 0, "", 0, 0},
 
-		// Series episodes: series name comes from the folder, not the filename.
-		{`D:\series\Arcane\Season 02\Arcane_S02E01.mp4`, "S02E01", 0, "Arcane", 2, 1},
-		{`D:\series\Arcane\Season 02\Arcane_S02E08.mp4`, "S02E08", 0, "Arcane", 2, 8},
+		{`series/Demo Show/Season 02/Demo Show_S02E01.mp4`, "S02E01", 0, "Demo Show", 2, 1},
+		{`series/Demo Show/Season 02/Demo Show_S02E08.mp4`, "S02E08", 0, "Demo Show", 2, 8},
 
-		// Episode under a Season folder but named "Libro N ... Capitulo NN" (no SxxExx).
-		{`D:\series\Avatar - La leyenda de Aang\Season 02\Avatar La leyenda de Aang - Libro 2 La Tierra - Capitulo 05 - El Dia del Avatar.avi`, "S02E05", 0, "Avatar - La leyenda de Aang", 2, 5},
+		{`series/Sample Series - The Long Name/Season 02/Sample Series The Long Name - Libro 2 La Tierra - Capitulo 05 - Episode Title.avi`, "S02E05", 0, "Sample Series - The Long Name", 2, 5},
 
-		// Episode nested in its own subfolder under Season NN, with [Cap.201].
-		{`D:\series\One Piece Live Action\Season 02\One Piece [HDTV 1080p][Cap.201]\One Piece [HDTV 1080p][Cap.201].mkv`, "S02E201", 0, "One Piece Live Action", 2, 201},
+		{`series/Long Title Show/Season 02/Long Title Show [HDTV 1080p][Cap.201]/Long Title Show [HDTV 1080p][Cap.201].mkv`, "S02E201", 0, "Long Title Show", 2, 201},
 	}
 	for _, c := range cases {
 		p := parseName(filepath.FromSlash(c.path))

@@ -23,8 +23,6 @@ import (
 //go:embed all:web
 var webFS embed.FS
 
-// lib holds the currently-scanned folder + its library key. Mutable at runtime
-// (the user can switch folders live), so every read goes through the mutex.
 type lib struct {
 	mu   sync.RWMutex
 	root string
@@ -39,19 +37,15 @@ func (l *lib) Set(root, key string) {
 	l.mu.Unlock()
 }
 
-// Client is one device seen talking to the server (by IP).
 type Client struct {
 	IP       string `json:"ip"`
 	Agent    string `json:"agent"`
 	Requests int    `json:"requests"`
 	FirstAt  int64  `json:"first_at"`
 	LastAt   int64  `json:"last_at"`
-	Self     bool   `json:"self"` // the machine running Gobby (localhost)
+	Self     bool   `json:"self"`
 }
 
-// clientTracker remembers which devices have connected, for the "connected
-// devices" panel. In-memory only (resets on restart) — this is presence info,
-// not something worth persisting.
 type clientTracker struct {
 	mu sync.Mutex
 	m  map[string]*Client
@@ -89,13 +83,56 @@ func isLoopback(ip string) bool {
 	return ip == "127.0.0.1" || ip == "::1" || strings.HasPrefix(ip, "127.")
 }
 
-// requestIsOwner reports whether a request may edit. Everyone on the local
-// network (and the host itself) can edit; only requests arriving through the
-// public Cloudflare tunnel are read-only guests. The tunnel is detected by the
-// headers Cloudflare injects and its trycloudflare.com Host — local requests
-// never carry those.
+func requestIsLocal(r *http.Request) bool {
+	if viaPublicTunnel(r) {
+		return false
+	}
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		ip = r.RemoteAddr
+	}
+
+	return isLoopback(ip) || isOwnIP(ip)
+}
+
+func isOwnIP(ip string) bool {
+	target := net.ParseIP(ip)
+	if target == nil {
+		return false
+	}
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return false
+	}
+	for _, a := range addrs {
+		if n, ok := a.(*net.IPNet); ok && n.IP.Equal(target) {
+			return true
+		}
+	}
+	return false
+}
+
+func safeJoin(root, rel string) (string, error) {
+	full := filepath.Join(root, filepath.FromSlash(rel))
+	r, err := filepath.Rel(root, full)
+	if err != nil || r == ".." || strings.HasPrefix(r, ".."+string(filepath.Separator)) {
+		return "", errors.New("ruta fuera de la biblioteca")
+	}
+	return full, nil
+}
+
 func requestIsOwner(r *http.Request) bool {
 	return !viaPublicTunnel(r)
+}
+
+func tunnelKeyOK(r *http.Request, want string) bool {
+	if r.URL.Query().Get("k") == want {
+		return true
+	}
+	if c, err := r.Cookie("gobby_k"); err == nil && c.Value == want {
+		return true
+	}
+	return false
 }
 
 func viaPublicTunnel(r *http.Request) bool {
@@ -109,9 +146,6 @@ func viaPublicTunnel(r *http.Request) bool {
 	return strings.HasSuffix(strings.ToLower(host), ".trycloudflare.com")
 }
 
-// isWrite reports whether a request mutates state. Read verbs and one harmless
-// exception (marking an item opened, which powers a guest's "continue" shelf)
-// are allowed for everyone; everything else is owner-only.
 func isWrite(method, path string) bool {
 	switch method {
 	case http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch:
@@ -119,35 +153,30 @@ func isWrite(method, path string) bool {
 		return false
 	}
 	if strings.HasSuffix(path, "/opened") {
-		return false // inocuous: lets guests get a "continue watching" shelf too
+		return false
 	}
 	return true
 }
 
-// looksLikeImage sniffs the magic bytes of the common cover formats.
 func looksLikeImage(b []byte) bool {
 	switch {
-	case len(b) >= 3 && b[0] == 0xFF && b[1] == 0xD8 && b[2] == 0xFF: // JPEG
+	case len(b) >= 3 && b[0] == 0xFF && b[1] == 0xD8 && b[2] == 0xFF:
 		return true
-	case len(b) >= 8 && string(b[:8]) == "\x89PNG\r\n\x1a\n": // PNG
+	case len(b) >= 8 && string(b[:8]) == "\x89PNG\r\n\x1a\n":
 		return true
-	case len(b) >= 12 && string(b[:4]) == "RIFF" && string(b[8:12]) == "WEBP": // WebP
+	case len(b) >= 12 && string(b[:4]) == "RIFF" && string(b[8:12]) == "WEBP":
 		return true
-	case len(b) >= 6 && (string(b[:6]) == "GIF87a" || string(b[:6]) == "GIF89a"): // GIF
+	case len(b) >= 6 && (string(b[:6]) == "GIF87a" || string(b[:6]) == "GIF89a"):
 		return true
 	}
 	return false
 }
 
-// baseURL is the address a client should use to reach Gobby. Behind the public
-// tunnel (or any reverse proxy) we honor the forwarded scheme/host verbatim, so
-// the URL stays https://…trycloudflare.com. On the LAN we rewrite the host to the
-// machine's LAN IP so phones don't get "localhost".
 func baseURL(r *http.Request) string {
 	if viaPublicTunnel(r) || r.Header.Get("X-Forwarded-Host") != "" {
 		scheme := r.Header.Get("X-Forwarded-Proto")
 		if scheme == "" {
-			scheme = "https" // Cloudflare always terminates TLS
+			scheme = "https"
 		}
 		host := r.Header.Get("X-Forwarded-Host")
 		if host == "" {
@@ -164,35 +193,28 @@ func baseURL(r *http.Request) string {
 	return base
 }
 
-// serve mounts the UI, JSON API and MCP handler on one mux/port.
 func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *lib) error {
 	mux := http.NewServeMux()
 	clients := &clientTracker{m: map[string]*Client{}}
-	binDir := filepath.Dir(dbPath) // where auto-downloaded binaries (cloudflared, ffmpeg) live
+	binDir := filepath.Dir(dbPath)
 
-	// What Gobby is reading and how much it found — shown in the UI header.
-	// `sections` lists only the tabs that currently hold something, so the UI
-	// can hide empty ones.
 	mux.HandleFunc("GET /api/info", func(w http.ResponseWriter, r *http.Request) {
 		var total int
 		db.QueryRow(`SELECT COUNT(*) FROM items WHERE library_key=? AND scan_state='present'`, lb.Key()).Scan(&total)
 		abs, _ := filepath.Abs(lb.Root())
 		genres, yMin, yMax := facets(db, lb.Key())
-		writeJSON(w, map[string]any{"root": abs, "total": total, "base": baseURL(r), "sections": nonEmptySections(db, lb.Key()), "owner": requestIsOwner(r), "version": version, "genres": genres, "yearMin": yMin, "yearMax": yMax}, nil)
+		writeJSON(w, map[string]any{"root": abs, "total": total, "base": baseURL(r), "sections": nonEmptySections(db, lb.Key()), "owner": requestIsOwner(r), "local": requestIsLocal(r), "version": version, "genres": genres, "yearMin": yMin, "yearMax": yMax}, nil)
 	})
 
 	mux.HandleFunc("GET /api/scan/status", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, scanProgress.snapshot(), nil)
 	})
 
-	// Global library search across every kind — powers the header search.
-	// (/api/search is the online watchlist picker; this one is the local catalogue.)
 	mux.HandleFunc("GET /api/library/search", func(w http.ResponseWriter, r *http.Request) {
 		res, err := searchAll(db, lb.Key(), r.URL.Query().Get("q"), 60)
 		writeJSON(w, res, err)
 	})
 
-	// Any kind split into folder groups (series/album/author) + loose items.
 	mux.HandleFunc("GET /api/browse", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		atoi := func(s string) int { n, _ := strconv.Atoi(s); return n }
@@ -214,34 +236,27 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		writeJSON(w, it, err)
 	})
 
-	// Whole-library size tree (all kinds) for the treeview + treemap.
 	mux.HandleFunc("GET /api/tree", func(w http.ResponseWriter, r *http.Request) {
 		tree, err := fullTree(db, lb.Key())
 		writeJSON(w, tree, err)
 	})
 
-	// Explicit "I opened this" signal from the UI (play/share button), powering
-	// the Home "continue watching" shelf.
 	mux.HandleFunc("POST /api/item/{id}/opened", func(w http.ResponseWriter, r *http.Request) {
 		id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
+		if t := r.URL.Query().Get("t"); t != "" {
+			secs, _ := strconv.Atoi(t)
+			_ = setProgress(db, lb.Key(), id, secs)
+		}
 		writeJSON(w, map[string]string{"status": "ok"}, markOpened(db, lb.Key(), id))
 	})
 
-	// Home shelves: recently opened ("continue") + recently added ("new").
-	// Generic files (kind='file') are excluded — Home is about your media, not
-	// the random zips/isos catalogued in the Files tab.
 	mux.HandleFunc("GET /api/home", func(w http.ResponseWriter, r *http.Request) {
 		cont, _ := homeShelf(db, lb.Key(), "last_opened>0 AND kind<>'file'", "last_opened DESC", 12)
-		// Sort by the file's own modtime, not the insert instant: a whole-library
-		// first scan stamps every row with the same added_at, so added_at DESC would
-		// degrade to id DESC and pin the same few titles forever. modtime reflects
-		// what's genuinely new on disk.
+
 		added, err := homeShelf(db, lb.Key(), "kind<>'file'", "modtime DESC, added_at DESC, id DESC", 18)
 		writeJSON(w, map[string]any{"continue": cont, "added": added}, err)
 	})
 
-	// Stream the actual media file (supports range requests → seek/play in browser).
-	// ?dl=1 forces a download instead of inline playback.
 	mux.HandleFunc("GET /api/item/{id}/stream", func(w http.ResponseWriter, r *http.Request) {
 		id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		it, err := getItem(db, lb.Key(), id)
@@ -251,38 +266,40 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		}
 		root := lb.Root()
 		full := filepath.Join(root, filepath.FromSlash(it.RelPath))
-		// Guard against path traversal: resolved file must stay under root.
+
 		if rel, err := filepath.Rel(root, full); err != nil || strings.HasPrefix(rel, "..") {
 			http.Error(w, "forbidden", 403)
 			return
 		}
 		if r.URL.Query().Get("dl") == "1" {
-			// Download always gets the original file untouched, never the remux.
+
 			w.Header().Set("Content-Disposition", "attachment; filename=\""+filepath.Base(full)+"\"")
 			http.ServeFile(w, r, full)
 			return
 		}
-		// mkv/avi don't play in browsers — remux to fragmented mp4 on the fly
-		// (video copied, audio→aac). Everything else is browser-native: serve as-is
-		// with Range support so seeking works.
+
 		if needsRemux(full) {
-			// ?t=<seconds> seeks: ffmpeg restarts the remux from there. The piped
-			// fragmented mp4 has no byte-range seek, so the UI drives it with ?t=.
+
 			startSec, _ := strconv.ParseFloat(r.URL.Query().Get("t"), 64)
-			audioIdx, _ := strconv.Atoi(r.URL.Query().Get("audio")) // 0 = default track
+			audioIdx, _ := strconv.Atoi(r.URL.Query().Get("audio"))
 			if err := streamRemux(r.Context(), w, binDir, full, startSec, audioIdx); err != nil && !errors.Is(err, errStreamStarted) {
 				http.Error(w, "no se pudo reproducir: "+err.Error(), 500)
 			}
 			return
 		}
-		// NOTE: opens are recorded via POST /api/item/{id}/opened (an explicit user
-		// action), NOT here — browsers prefetch/preload stream links, which would
-		// otherwise fill "continue watching" with things never actually played.
+
 		http.ServeFile(w, r, full)
 	})
 
-	// Playback metadata for the remux player: duration (for the seek bar — the piped
-	// fragmented mp4 reports 0) plus selectable audio + subtitle tracks.
+	mux.HandleFunc("GET /api/item/{id}/next", func(w http.ResponseWriter, r *http.Request) {
+		id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
+		if it, ok := nextInAlbum(db, lb.Key(), id); ok {
+			writeJSON(w, it, nil)
+			return
+		}
+		writeJSON(w, nil, nil)
+	})
+
 	mux.HandleFunc("GET /api/item/{id}/tracks", func(w http.ResponseWriter, r *http.Request) {
 		id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		it, err := getItem(db, lb.Key(), id)
@@ -291,12 +308,10 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 			return
 		}
 		full := filepath.Join(lb.Root(), filepath.FromSlash(it.RelPath))
-		_, _, dur := probeMedia(r.Context(), binDir, full)
-		tr := probeTracks(r.Context(), binDir, full)
+		dur, tr := probeAll(r.Context(), binDir, full)
 		writeJSON(w, map[string]any{"seconds": dur, "audio": tr.Audio, "subs": tr.Subs}, nil)
 	})
 
-	// One subtitle track as WebVTT, loaded by the player's <track> element.
 	mux.HandleFunc("GET /api/item/{id}/sub", func(w http.ResponseWriter, r *http.Request) {
 		id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		it, err := getItem(db, lb.Key(), id)
@@ -322,12 +337,9 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		w.Write(b)
 	})
 
-	// Upload your own cover image for any item (works for every kind — books,
-	// music, files — not just what a provider can find). Marks it as enriched so
-	// automatic fetching won't overwrite it.
 	mux.HandleFunc("POST /api/item/{id}/cover", func(w http.ResponseWriter, r *http.Request) {
 		id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
-		img, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 16<<20)) // 16 MB cap
+		img, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 16<<20))
 		if err != nil || len(img) < 4 {
 			http.Error(w, "imagen inválida o demasiado grande", 400)
 			return
@@ -354,8 +366,6 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		writeJSON(w, map[string]string{"status": "ok"}, updateItem(db, lb.Key(), id, in))
 	})
 
-	// A manual section is an explicit override; "auto" returns to the stable
-	// classifier built from extension, embedded tags and path parsing.
 	mux.HandleFunc("POST /api/item/{id}/section", func(w http.ResponseWriter, r *http.Request) {
 		id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		var in struct {
@@ -366,6 +376,73 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 			return
 		}
 		writeJSON(w, map[string]string{"status": "ok"}, setSection(db, lb.Key(), id, in.Section))
+	})
+
+	mux.HandleFunc("POST /api/reveal", func(w http.ResponseWriter, r *http.Request) {
+		if !requestIsLocal(r) {
+			http.Error(w, "solo disponible en el equipo que ejecuta Gobby", http.StatusForbidden)
+			return
+		}
+		var in struct{ Path string }
+		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+		full, err := safeJoin(lb.Root(), in.Path)
+		if err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+		fi, err := os.Stat(full)
+		if err != nil {
+			http.Error(w, "no existe", 404)
+			return
+		}
+		if err := revealInExplorer(full, fi.IsDir()); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		writeJSON(w, map[string]string{"status": "ok"}, nil)
+	})
+
+	mux.HandleFunc("POST /api/upload", func(w http.ResponseWriter, r *http.Request) {
+		if !requestIsLocal(r) {
+			http.Error(w, "solo disponible en el equipo que ejecuta Gobby", http.StatusForbidden)
+			return
+		}
+		if err := r.ParseMultipartForm(32 << 20); err != nil {
+			http.Error(w, "subida inválida", 400)
+			return
+		}
+		dir, err := safeJoin(lb.Root(), r.FormValue("dir"))
+		if err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+		if fi, err := os.Stat(dir); err != nil || !fi.IsDir() {
+			http.Error(w, "carpeta destino inválida", 400)
+			return
+		}
+		file, hdr, err := r.FormFile("file")
+		if err != nil {
+			http.Error(w, "falta el fichero", 400)
+			return
+		}
+		defer file.Close()
+		dest := filepath.Join(dir, filepath.Base(hdr.Filename))
+		out, err := os.Create(dest)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		if _, err := io.Copy(out, file); err != nil {
+			out.Close()
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		out.Close()
+		go func(root, key string) { scan(db, root, key) }(lb.Root(), lb.Key())
+		writeJSON(w, map[string]string{"status": "ok", "name": filepath.Base(dest)}, nil)
 	})
 
 	mux.HandleFunc("GET /api/watchlist", func(w http.ResponseWriter, r *http.Request) {
@@ -430,8 +507,6 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		writeJSON(w, map[string]string{"status": "ok"}, deleteWatch(db, id))
 	})
 
-	// Online title search for the watchlist picker (movies/series via Cinemeta,
-	// books via Open Library). Returns [] on empty query.
 	mux.HandleFunc("GET /api/search", func(w http.ResponseWriter, r *http.Request) {
 		q := strings.TrimSpace(r.URL.Query().Get("q"))
 		if q == "" {
@@ -445,8 +520,6 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		writeJSON(w, searchTitles(q, kinds), nil)
 	})
 
-	// Start a cover-fetch run in the background; UI polls /api/enrich/status.
-	// ?force=1 re-fetches items that already have a cover.
 	mux.HandleFunc("POST /api/enrich", func(w http.ResponseWriter, r *http.Request) {
 		if enrichProgress.snapshot().Running {
 			writeJSON(w, map[string]string{"status": "already-running"}, nil)
@@ -470,7 +543,6 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		writeJSON(w, map[string]string{"status": "stopping"}, nil)
 	})
 
-	// Re-fetch one item; optional {"imdb_id":"tt..."} forces a specific match.
 	mux.HandleFunc("POST /api/item/{id}/refetch", func(w http.ResponseWriter, r *http.Request) {
 		id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		var in struct {
@@ -489,9 +561,6 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		writeJSON(w, map[string]any{"found": ok, "item": it}, nil)
 	})
 
-	// Switch the scanned folder live: repoint the library and kick a background
-	// rescan. The new folder gets its own library_key, so its catalogue is kept
-	// separate from the previous one (switch back later and it's still there).
 	mux.HandleFunc("POST /api/library/folder", func(w http.ResponseWriter, r *http.Request) {
 		var in struct {
 			Path string `json:"path"`
@@ -519,15 +588,11 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		writeJSON(w, map[string]string{"status": "ok", "root": abs}, nil)
 	})
 
-	// Catalogues indexed in this DB (for the library switcher). Several can be
-	// reachable at once (e.g. two mounted disks).
 	mux.HandleFunc("GET /api/libraries", func(w http.ResponseWriter, r *http.Request) {
 		libs, err := listLibraries(db, lb.Key())
 		writeJSON(w, libs, err)
 	})
 
-	// View a different indexed catalogue. Read-only: nothing in the DB changes; it
-	// just re-points what Gobby shows (and rescans if that root is reachable).
 	mux.HandleFunc("POST /api/library/switch", func(w http.ResponseWriter, r *http.Request) {
 		var in struct{ Key string }
 		json.NewDecoder(r.Body).Decode(&in)
@@ -535,9 +600,9 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 			http.Error(w, "falta key", 400)
 			return
 		}
-		root := in.Key // a default key is its own path; custom names have no path
+		root := in.Key
 		if !dirExists(root) {
-			root = lb.Root() // unreachable root: keep current folder for resolution
+			root = lb.Root()
 		}
 		lb.Set(root, in.Key)
 		if dirExists(root) {
@@ -546,9 +611,6 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		writeJSON(w, map[string]string{"status": "ok"}, nil)
 	})
 
-	// Re-point an indexed catalogue at the folder Gobby currently lives in — the
-	// "I moved the whole Gobby folder (db + media) elsewhere" case. Mutates the DB
-	// (rewrites library_key), so it's an explicit button, never automatic.
 	mux.HandleFunc("POST /api/library/rebind", func(w http.ResponseWriter, r *http.Request) {
 		var in struct{ Key string }
 		json.NewDecoder(r.Body).Decode(&in)
@@ -567,8 +629,6 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		writeJSON(w, map[string]string{"status": "ok", "root": newRoot}, nil)
 	})
 
-	// Export the CURRENT library as a standalone gobby.db (its items + the
-	// watchlist). Built into a temp file via ATTACH, streamed, then removed.
 	mux.HandleFunc("GET /api/db/export", func(w http.ResponseWriter, r *http.Request) {
 		tmp := dbPath + ".export"
 		if err := exportLibrary(db, lb.Key(), tmp); err != nil {
@@ -587,10 +647,8 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		io.Copy(w, f)
 	})
 
-	// Merge an uploaded gobby.db into this one: its libraries are ADDED to the list
-	// (a key already here is skipped, never clobbered). No restart — done live.
 	mux.HandleFunc("POST /api/db/import", func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 512<<20)) // 512 MB cap
+		body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 512<<20))
 		if err != nil {
 			http.Error(w, "subida demasiado grande o inválida", 400)
 			return
@@ -613,12 +671,10 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		writeJSON(w, map[string]any{"status": "ok", "added": added}, nil)
 	})
 
-	// Temporary Cloudflare tunnel: expose Gobby to the public internet with no
-	// account. The URL is public + unauthenticated (the UI warns before starting).
 	tun := &tunnel{}
 	_, port, _ := net.SplitHostPort(addr)
 	mux.HandleFunc("POST /api/tunnel/start", func(w http.ResponseWriter, r *http.Request) {
-		go tun.start(ctx, binDir, port) // may download cloudflared first; poll status
+		go tun.start(ctx, binDir, port)
 		writeJSON(w, map[string]string{"status": "starting"}, nil)
 	})
 	mux.HandleFunc("POST /api/tunnel/stop", func(w http.ResponseWriter, r *http.Request) {
@@ -630,9 +686,6 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 	})
 	go func() { <-ctx.Done(); tun.stop() }()
 
-	// Self-update from GitHub Releases: check compares the running version to the
-	// latest tag; apply downloads and overwrites the binary (+ffmpeg) in place. Both
-	// are POST, so the owner-only write guard already keeps public guests out.
 	mux.HandleFunc("GET /api/update/check", func(w http.ResponseWriter, r *http.Request) {
 		cctx, cancel := context.WithTimeout(r.Context(), updateTimeout)
 		defer cancel()
@@ -648,7 +701,6 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		writeJSON(w, map[string]string{"status": "ok", "note": "actualizado — reinicia Gobby para usar la nueva versión"}, nil)
 	})
 
-	// QR code (PNG) encoding the LAN URL, so another device can scan to connect.
 	mux.HandleFunc("GET /api/qr", func(w http.ResponseWriter, r *http.Request) {
 		target := r.URL.Query().Get("url")
 		if target == "" {
@@ -664,37 +716,45 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		w.Write(code.PNG())
 	})
 
-	// Devices seen connecting to this server (presence, in-memory).
 	mux.HandleFunc("GET /api/clients", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]any{"base": baseURL(r), "clients": clients.list()}, nil)
 	})
 
-	mux.Handle("/mcp", mcpHandler(db, version, lb.Root(), lb.Key()))
+	_, mcpPort, _ := net.SplitHostPort(addr)
+	uiBase := "http://localhost:" + mcpPort
+	if ip := lanIP(); ip != "" {
+		uiBase = "http://" + net.JoinHostPort(ip, mcpPort)
+	}
+	mux.Handle("/mcp", mcpHandler(db, version, lb.Root(), lb.Key(), uiBase))
 
-	// Embedded UI, registered last so it doesn't shadow /api or /mcp.
-	// no-cache so a browser never serves a stale UI after an upgrade.
 	ui, err := fs.Sub(webFS, "web")
 	if err != nil {
 		return err
 	}
 	fileServer := http.FileServer(http.FS(ui))
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// no-store (not just no-cache): the UI ships inside the binary and changes
-		// with every build, so never let a browser reuse a stale app.js/index.html.
+
 		w.Header().Set("Cache-Control", "no-store, must-revalidate")
 		fileServer.ServeHTTP(w, r)
 	}))
 
-	// track every device that talks to us (skip the presence endpoints themselves
-	// and the progress poll, which would otherwise dominate the request counts).
 	tracked := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path
+
+		if viaPublicTunnel(r) {
+			want := tun.Token()
+			if want == "" || !tunnelKeyOK(r, want) {
+				http.Error(w, "enlace no válido o caducado", http.StatusForbidden)
+				return
+			}
+			if r.URL.Query().Get("k") == want {
+				http.SetCookie(w, &http.Cookie{Name: "gobby_k", Value: want, Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode})
+			}
+		}
 		if p != "/api/clients" && p != "/api/qr" && !strings.HasSuffix(p, "/status") {
 			clients.note(r)
 		}
-		// Writes are allowed for the host and everyone on the local network; only
-		// visitors coming through the public tunnel are read-only (browse + play,
-		// no editing/deleting/rescanning).
+
 		if isWrite(r.Method, p) && !requestIsOwner(r) {
 			http.Error(w, "solo lectura: la edición no está disponible por el enlace público", http.StatusForbidden)
 			return

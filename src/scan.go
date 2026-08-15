@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-// scan walks root and upserts media files into the DB. It is incremental: a
-// file whose modtime matches the stored one is skipped without re-reading tags.
-// relPaths are stored relative to root so the DB stays portable across drive
-// letters (E: -> F:) when the external disk moves between machines.
 func scan(db *sql.DB, root, libraryKey string) (added int, err error) {
 	runID := time.Now().UnixNano()
 	scanProgress.mu.Lock()
@@ -27,13 +23,13 @@ func scan(db *sql.DB, root, libraryKey string) (added int, err error) {
 	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			if path == root {
-				return err // never mark the catalogue missing after a failed root walk
+				return err
 			}
-			return nil // skip unreadable entries, keep going
+			return nil
 		}
 		if d.IsDir() {
 			if skipDir(d.Name()) {
-				return filepath.SkipDir // don't descend into system/non-media dirs
+				return filepath.SkipDir
 			}
 			return nil
 		}
@@ -41,8 +37,7 @@ func scan(db *sql.DB, root, libraryKey string) (added int, err error) {
 		if kind == "" {
 			return nil
 		}
-		// Skip sidecar artwork (cover.jpg, folder.png, poster.jpg…): these are
-		// covers for other media, not files you want listed in the Files tab.
+
 		if kind == "file" && isArtworkSidecar(path) {
 			return nil
 		}
@@ -58,12 +53,11 @@ func scan(db *sql.DB, root, libraryKey string) (added int, err error) {
 
 		if mt, ok := modTimeOf(db, libraryKey, rel); ok && mt == info.ModTime().Unix() {
 			_ = markSeen(db, libraryKey, rel, runID)
-			return nil // unchanged, skip
+			return nil
 		} else if !ok {
-			// Unknown path: might be a file that moved/renamed since last scan.
-			// Adopt the matching missing row (keeps your edits) instead of dup'ing.
+
 			if moved, e := rematchMoved(db, libraryKey, rel, info.Size(), info.ModTime().Unix(), runID); e == nil && moved {
-				return nil // rematchMoved already stamped this run's last_seen_scan
+				return nil
 			}
 		}
 
@@ -89,15 +83,12 @@ func scan(db *sql.DB, root, libraryKey string) (added int, err error) {
 	return added, err
 }
 
-// isArtworkSidecar reports whether an image file is really cover art for other
-// media (cover.jpg, folder.png, poster.jpg, season01-poster.jpg…) rather than a
-// standalone image worth cataloguing.
 func isArtworkSidecar(path string) bool {
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
 	case ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tiff":
 	default:
-		return false // only images can be sidecar artwork
+		return false
 	}
 	name := strings.ToLower(stripExt(filepath.Base(path)))
 	for _, art := range []string{"cover", "folder", "poster", "fanart", "backdrop", "banner", "thumb", "back", "disc", "cdart", "clearart", "logo", "season"} {
@@ -108,13 +99,10 @@ func isArtworkSidecar(path string) bool {
 	return false
 }
 
-// skipDir avoids descending into OS/system folders and noisy technical dirs
-// (dependency caches, VCS metadata) that would flood the Files tab with junk.
-// User content — roms, games, programs, logs, media — is indexed.
 func skipDir(name string) bool {
 	switch name {
-	case "$RECYCLE.BIN", "System Volume Information", // Windows system
-		"node_modules", ".git", "__pycache__", ".cache", "AppData", ".svn", ".hg": // technical noise
+	case "$RECYCLE.BIN", "System Volume Information",
+		"node_modules", ".git", "__pycache__", ".cache", "AppData", ".svn", ".hg":
 		return true
 	}
 	return false
