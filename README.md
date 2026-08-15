@@ -45,6 +45,7 @@ drawer**. Gobby would iron his hands before touching your original files.
 
 Grab the binary for your platform from the [Releases](https://github.com/danijerez/Gobby/releases)
 page and drop it in the folder you want it to live in. That's it — one file, no install.
+(See the [CHANGELOG](CHANGELOG.md) for what's new.)
 
 To play `.mkv`/`.avi` in the browser Gobby needs a slim **ffmpeg**. The first time
 one is needed Gobby downloads it automatically from its own release into the

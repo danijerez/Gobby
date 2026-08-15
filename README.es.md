@@ -46,6 +46,7 @@ ficheros originales.
 
 Coge el binario para tu plataforma de la página de [Releases](https://github.com/danijerez/Gobby/releases)
 y déjalo en la carpeta donde quieras que viva. Eso es todo — un fichero, sin instalación.
+(Mira el [CHANGELOG](CHANGELOG.md) para ver las novedades.)
 
 Para reproducir `.mkv`/`.avi` en el navegador Gobby necesita un **ffmpeg** slim. La
 primera vez que hace falta, Gobby lo descarga automáticamente de su propia release
