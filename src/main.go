@@ -18,10 +18,18 @@ import (
 var version = "0.1.0"
 
 var (
-	flagPath    = flag.String("p", "", "carpeta a escanear (por defecto: junto al binario)")
-	flagPort    = flag.String("port", "8420", "puerto del servidor")
-	flagLibrary = flag.String("library", "", "identificador estable de biblioteca (útil para discos extraíbles)")
+	flagPath    = flag.String("p", envOr("GOBBY_PATH", ""), "carpeta a escanear (por defecto: junto al binario)")
+	flagPort    = flag.String("port", envOr("GOBBY_PORT", "8420"), "puerto del servidor")
+	flagLibrary = flag.String("library", envOr("GOBBY_LIBRARY", ""), "identificador estable de biblioteca (útil para discos extraíbles)")
+	flagData    = flag.String("data", envOr("GOBBY_DATA", ""), "carpeta para gobby.db (por defecto: junto a los medios; útil para contenedores)")
 )
+
+func envOr(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
+}
 
 func main() {
 	flag.Parse()
@@ -38,6 +46,11 @@ func main() {
 	dataDir := root
 	if strings.Trim(*flagPath, `"`) == "" {
 		dataDir = base
+	}
+	if d := strings.Trim(*flagData, `"`); d != "" {
+		if abs, err := filepath.Abs(d); err == nil {
+			dataDir = abs
+		}
 	}
 	dbPath := filepath.Join(dataDir, "gobby.db")
 	db, err := openDB(dbPath)

@@ -1,0 +1,16 @@
+services:
+  gobby:
+    build: .
+    # or use a published image once you tag one:
+    # image: ghcr.io/danijerez/gobby:latest
+    ports:
+      - "8420:8420"
+    volumes:
+      # your media library — read-only, Gobby never writes here
+      - ./media:/media:ro
+      # the catalogue (gobby.db) — persists across restarts
+      - gobby-data:/data
+    restart: unless-stopped
+
+volumes:
+  gobby-data:

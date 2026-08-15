@@ -86,6 +86,30 @@ Gobby imprime su nombre, versión y un enlace (con un QR) cuando despierta.
 
 Luego abre el enlace que Gobby imprime, o escanea el QR desde tu móvil. Misma casa, misma puerta.
 
+## Gobby en una caja 🐳
+
+Gobby corre igual de feliz sin pantalla dentro de un contenedor. El repo trae un
+`Dockerfile` y un `docker-compose.yml`. Apunta el volumen `media` a tu biblioteca
+y:
+
+```sh
+docker compose up
+```
+
+Dos volúmenes, cada uno con su función:
+
+- **`/media`** — tu biblioteca, montada **solo-lectura** (`:ro`). Gobby solo la lee.
+- **`/data`** — donde vive `gobby.db`, un volumen **persistente** para que tu
+  catálogo sobreviva a los reinicios.
+
+ffmpeg viene dentro de la imagen, así que los mkv/avi se reproducen sin descargar
+nada. Configura con variables de entorno (todas opcionales): `GOBBY_PATH` (carpeta
+a escanear, por defecto `/media`), `GOBBY_DATA` (carpeta de la db, por defecto
+`/data`), `GOBBY_PORT`, `GOBBY_LIBRARY`.
+
+Ejecutar el binario suelto sigue funcionando exactamente igual que antes — el
+contenedor es solo otra forma de despertar a Gobby, no un reemplazo.
+
 ## Qué sabe hacer Gobby 🎬
 
 - **Escanea sin conexión** — lee nombres de fichero y etiquetas incrustadas, no necesita internet para catalogar.
