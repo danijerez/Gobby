@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"embed"
 	"encoding/json"
 	"errors"
 	"io"
 	"io/fs"
+	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -184,13 +187,33 @@ func baseURL(r *http.Request) string {
 		}
 		return scheme + "://" + host
 	}
-	base := "http://" + r.Host
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	base := scheme + "://" + r.Host
 	if ip := lanIP(); ip != "" {
 		if _, port, _ := net.SplitHostPort(r.Host); port != "" {
-			base = "http://" + net.JoinHostPort(ip, port)
+			base = scheme + "://" + net.JoinHostPort(ip, port)
 		}
 	}
 	return base
+}
+
+func httpsBase(base string) string {
+	if strings.HasPrefix(base, "https://") {
+		return base
+	}
+	rest := strings.TrimPrefix(base, "http://")
+	host, port, err := net.SplitHostPort(rest)
+	if err != nil {
+		return base
+	}
+	p, err := strconv.Atoi(port)
+	if err != nil {
+		return base
+	}
+	return "https://" + net.JoinHostPort(host, strconv.Itoa(p+1))
 }
 
 func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *lib) error {
@@ -399,6 +422,33 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 			return
 		}
 		if err := revealInExplorer(full, fi.IsDir()); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		writeJSON(w, map[string]string{"status": "ok"}, nil)
+	})
+
+	mux.HandleFunc("DELETE /api/item/{id}/file", func(w http.ResponseWriter, r *http.Request) {
+		if !requestIsLocal(r) {
+			http.Error(w, "solo disponible en el equipo que ejecuta Gobby", http.StatusForbidden)
+			return
+		}
+		id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
+		it, err := getItem(db, lb.Key(), id)
+		if err != nil {
+			http.Error(w, "no existe", 404)
+			return
+		}
+		full, err := safeJoin(lb.Root(), it.RelPath)
+		if err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+		if err := os.Remove(full); err != nil && !os.IsNotExist(err) {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		if err := deleteItemRow(db, lb.Key(), id); err != nil {
 			http.Error(w, err.Error(), 500)
 			return
 		}
@@ -704,7 +754,7 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 	mux.HandleFunc("GET /api/qr", func(w http.ResponseWriter, r *http.Request) {
 		target := r.URL.Query().Get("url")
 		if target == "" {
-			target = baseURL(r)
+			target = httpsBase(baseURL(r))
 		}
 		code, err := qr.Encode(target, qr.M)
 		if err != nil {
@@ -768,6 +818,27 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		defer cancel()
 		_ = srv.Shutdown(sc)
 	}()
+
+	if cert, err := selfSignedCert(); err == nil {
+		if _, port, e := net.SplitHostPort(addr); e == nil {
+			if p, e2 := strconv.Atoi(port); e2 == nil {
+				tlsAddr := "0.0.0.0:" + strconv.Itoa(p+1)
+				tlsSrv := &http.Server{
+					Addr:              tlsAddr,
+					Handler:           tracked,
+					ReadHeaderTimeout: 5 * time.Second,
+					TLSConfig:         &tls.Config{Certificates: []tls.Certificate{cert}},
+					ErrorLog:          log.New(io.Discard, "", 0),
+				}
+				go func() { <-ctx.Done(); tlsSrv.Close() }()
+				go func() {
+					if err := tlsSrv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
+						slog.Warn("https listener", "err", err)
+					}
+				}()
+			}
+		}
+	}
 
 	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err

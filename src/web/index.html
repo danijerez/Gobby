@@ -14,6 +14,7 @@
   <script defer src="/alpine.min.js"></script>
 </head>
 <body x-data="gobby()" x-init="init()" :class="{'is-guest': info.owner === false}">
+  <div class="aura" :style="auraStyle"></div>
   <!-- backend gone: a grey blocking curtain so the cached page can't be used blindly.
        The logo only wobbles (and plays the error cue) when you poke it. -->
   <div class="offline-curtain" x-show="offline" x-transition.opacity style="display:none">
@@ -23,8 +24,17 @@
   </div>
 
   <header>
-    <button class="icon-btn back-btn" x-show="stack.length > 1" @click="back()" :title="t('back')" x-html="svg('back')"></button>
-    <button class="brand" @click="goHome()" :title="t('home')"><span class="brand-logo"></span><span class="brand-name"><span>G</span><span>o</span><span>b</span><span>b</span><span>y</span></span></button>
+    <button class="icon-btn back-btn" :class="{hidden: stack.length <= 1 && !showFilters}" @click="back()" :title="t('back')" x-html="svg('back')"></button>
+    <button class="brand" @click="goHome()" :title="t('home')"><span class="brand-logo"></span></button>
+
+    <nav class="tabs tabs-desktop" x-show="!(searchOpen && q)">
+      <template x-for="tb in visibleTabs()" :key="tb">
+        <button :class="{on: tab===tb && stack.length===1}" @click="goTab(tb)"><span x-html="tabIcon(tb)"></span> <span x-text="t(tb)"></span></button>
+      </template>
+    </nav>
+
+    <span class="spacer"></span>
+
     <div class="search-wrap" :class="{open: searchOpen}">
       <button class="search-toggle" @click="toggleSearch()" :title="t('search')" x-show="!searchOpen">
         <span class="ic" x-html="svg('search')"></span>
@@ -40,7 +50,6 @@
                   @mousedown.prevent @click="voiceSearch()" :title="t('search')" x-html="svg('mic')"></button>
         </div>
       </template>
-      <!-- filter funnel + the active-filter chips right beside it -->
       <button class="filter-btn" x-show="top.view === 'home' && tab !== 'watch'"
               :class="{active: showFilters, 'has-filters': activeChips().length}"
               @click="showFilters = !showFilters" :title="t('filters')" x-html="svg('filter')"></button>
@@ -51,15 +60,6 @@
         <button class="chip-clear" @click="clearFilters()" :title="t('clearFilters')" x-html="svg('close')"></button>
       </div>
     </div>
-    <!-- inline progress (scan / cover-fetch): color signals the phase -->
-    <div class="hprog" x-show="busy" :title="progLabel()" style="display:none">
-      <div class="hprog-track" :class="['phase-'+prog.phase, {indeterminate: indeterminate()}]">
-        <div class="hprog-fill" :style="indeterminate() ? '' : `width:${progPct()}%`"></div>
-      </div>
-      <span class="hprog-lbl" x-text="progLabel()"></span>
-      <button class="hprog-stop" x-show="prog.phase === 'enrich'" @click="stopEnrich()" :title="t('stop')" x-html="svg('stop')"></button>
-    </div>
-    <span class="spacer" x-show="!busy"></span>
 
     <!-- overflow menu: everything but brand + search lives here -->
     <div class="menu-wrap" @keydown.escape="menuOpen=false">
@@ -86,12 +86,18 @@
 
         <div class="menu-sep owner-only"></div>
         <button class="owner-only" @click="openLibraries(); menuOpen=false"><span x-html="svg('folder')"></span> <span x-text="t('libraries')"></span></button>
+
+        <div class="menu-sep menu-mobile-only"></div>
+        <button class="menu-mobile-only" @click="toggleTheme()"><span x-html="svg(theme === 'dark' ? 'sun' : 'moon')"></span> <span x-text="t('theme')"></span></button>
+        <button class="menu-mobile-only" @click="toggleSound()"><span x-html="svg(soundOn ? 'volume' : 'mute')"></span> <span x-text="t('sound')"></span></button>
+        <button class="menu-mobile-only" @click="cycleLang()"><span x-html="svg('languages')"></span> <span x-text="t('language') + ' · ' + lang.toUpperCase()"></span></button>
+        <a class="menu-mobile-only menu-link" href="https://github.com/danijerez/Gobby" target="_blank" rel="noopener"><span x-html="svg('github')"></span> GitHub</a>
       </div>
     </div>
     <input type="file" x-ref="dbfile" accept=".db" style="display:none" @change="doImport($event)">
   </header>
 
-  <nav class="tabs" x-show="!(searchOpen && q)">
+  <nav class="tabs tabs-mobile">
     <template x-for="tb in visibleTabs()" :key="tb">
       <button :class="{on: tab===tb && stack.length===1}" @click="goTab(tb)"><span x-html="tabIcon(tb)"></span> <span x-text="t(tb)"></span></button>
     </template>
@@ -115,6 +121,7 @@
     <p class="empty" x-show="!searchResults.length" x-text="t('empty')"></p>
   </main>
 
+  <div class="fd-backdrop" x-show="showFilters" @click="showFilters=false" x-transition.opacity style="display:none"></div>
   <!-- filters: a slim drawer from the right; results stay visible and update live -->
   <aside class="filter-drawer" x-show="showFilters" @keydown.escape="showFilters=false"
          x-transition:enter="fd-enter" x-transition:enter-start="fd-off" x-transition:enter-end="fd-on"
@@ -206,6 +213,11 @@
     <template x-if="tree">
       <div class="tree-panel">
         <div class="section-head">
+          <div class="tree-search">
+            <span x-html="svg('search')"></span>
+            <input type="search" x-model="treeQ" :placeholder="t('filterFiles')">
+            <button x-show="treeQ" @click="treeQ=''" x-html="svg('close')" :title="t('clearFilters')"></button>
+          </div>
           <span class="count" x-text="treeTotal() + ' · ' + treeCount() + ' ' + t('filesUnit')"></span>
         </div>
         <div class="treemap">
@@ -387,30 +399,31 @@
           <div class="unavailable-note" x-show="it.state === 'missing'">
             <span x-html="svg('alert')"></span> <span x-text="t('unavailableNote')"></span>
           </div>
-          <div class="actions" x-show="it.state !== 'missing' && it.kind === 'video' && !videoOpen">
-            <button class="action primary" @click="playHere(it)"><span x-html="svg('play')"></span> <span x-text="t('playHere')"></span></button>
+          <div class="actions" x-show="it.state !== 'missing'">
+            <!-- primary action, by type -->
+            <template x-if="it.kind === 'video' && !videoOpen">
+              <button class="action primary" @click="playHere(it)"><span x-html="svg('play')"></span> <span x-text="t('playHere')"></span></button>
+            </template>
+            <template x-if="it.kind !== 'video' && previewType(it)">
+              <button class="action primary" @click="togglePreview(); markOpened(it)"><span x-html="svg('play')"></span> <span x-text="t('preview')"></span></button>
+            </template>
+            <template x-if="it.kind !== 'video' && !previewType(it)">
+              <a class="action primary" :href="downloadURL(it)" @click="markOpened(it)"><span x-html="svg('download')"></span> <span x-text="t('download')"></span></a>
+            </template>
+            <!-- always-useful secondary: cast (or stop) -->
+            <button class="action" x-show="canCast() && !casting" @click="cast(it)"><span x-html="svg('cast')"></span> <span x-text="t('castTo')"></span></button>
+            <button class="action danger" x-show="casting" @click="stopCast()"><span x-html="svg('stop')"></span> <span x-text="t('castStop')"></span></button>
+            <!-- everything else folds into "More" -->
+            <button class="action" @click="moreOpen = !moreOpen" :class="{active: moreOpen}"><span x-html="svg('more')"></span> <span x-text="t('moreActions')"></span></button>
+          </div>
+          <div class="actions more-actions" x-show="moreOpen && it.state !== 'missing'" x-transition>
             <a class="action" :href="streamURL(it)" target="_blank" rel="noopener" @click="markOpened(it)"><span x-html="svg('external')"></span> <span x-text="t('openTab')"></span></a>
-            <a class="action" x-show="isAndroid()" :href="androidIntent(it)" @click="markOpened(it)"><span x-html="svg('external')"></span> <span x-text="t('openWith')"></span></a>
-            <button class="action" x-show="canCast()" @click="cast(it)"><span x-html="svg('cast')"></span> <span x-text="t('castTo')"></span></button>
+            <a class="action" x-show="isAndroid() && it.kind === 'video'" :href="androidIntent(it)" @click="markOpened(it)"><span x-html="svg('external')"></span> <span x-text="t('openWith')"></span></a>
             <button class="action" x-show="canShare()" @click="share(it)"><span x-html="svg('external')"></span> <span x-text="t('send')"></span></button>
             <button class="action" @click="copyStream(it)"><span x-html="svg('copy')"></span> <span x-text="copied ? t('copied') : t('openExternal')"></span></button>
             <a class="action" :href="downloadURL(it)"><span x-html="svg('download')"></span> <span x-text="t('download')"></span></a>
             <a class="action" x-show="imdbURL(it)" :href="imdbURL(it)" target="_blank" rel="noopener"><span x-html="svg('external')"></span> IMDb</a>
-          </div>
-          <div class="actions" x-show="it.state !== 'missing' && previewType(it)">
-            <button class="action primary" @click="togglePreview(); markOpened(it)">
-              <span x-html="svg('play')"></span> <span x-text="t('preview')"></span>
-            </button>
-            <button class="action" x-show="canCast() && it.kind==='audio'" @click="cast(it)"><span x-html="svg('cast')"></span> <span x-text="t('castTo')"></span></button>
-            <a class="action" :href="streamURL(it)" target="_blank" rel="noopener" @click="markOpened(it)"><span x-html="svg('external')"></span> <span x-text="t('openTab')"></span></a>
-            <button class="action" @click="copyStream(it)"><span x-html="svg('copy')"></span> <span x-text="copied ? t('copied') : t('openExternal')"></span></button>
-            <a class="action" :href="downloadURL(it)"><span x-html="svg('download')"></span> <span x-text="t('download')"></span></a>
-          </div>
-          <!-- no inline preview (odd book formats, generic files): download / open / copy -->
-          <div class="actions" x-show="it.state !== 'missing' && it.kind !== 'video' && it.kind !== 'audio' && !previewType(it)">
-            <a class="action primary" :href="downloadURL(it)" @click="markOpened(it)"><span x-html="svg('download')"></span> <span x-text="t('download')"></span></a>
-            <a class="action" :href="streamURL(it)" target="_blank" rel="noopener" @click="markOpened(it)"><span x-html="svg('external')"></span> <span x-text="t('openTab')"></span></a>
-            <button class="action" @click="copyStream(it)"><span x-html="svg('copy')"></span> <span x-text="copied ? t('copied') : t('openExternal')"></span></button>
+            <button class="action danger" x-show="info.local" @click="deleteFile(it)"><span x-html="svg('trash')"></span> <span x-text="t('deleteFile')"></span></button>
           </div>
         </div>
 
@@ -711,12 +724,19 @@
         <span class="foot-path" x-text="info.root" x-show="info.root"></span>
       </button>
     </div>
+    <div class="hprog foot-hprog" x-show="busy" :title="progLabel()" style="display:none">
+      <div class="hprog-track" :class="['phase-'+prog.phase, {indeterminate: indeterminate()}]">
+        <div class="hprog-fill" :style="indeterminate() ? '' : `width:${progPct()}%`"></div>
+      </div>
+      <span class="hprog-lbl" x-text="progLabel()"></span>
+      <button class="hprog-stop" x-show="prog.phase === 'enrich'" @click="stopEnrich()" :title="t('stop')" x-html="svg('stop')"></button>
+    </div>
     <span class="foot-spacer"></span>
     <div class="foot-row">
       <!-- language: globe + current code; opens upward to full names -->
       <div class="foot-langwrap" @keydown.escape="langOpen=false">
         <button class="foot-btn foot-lang" :class="{active: langOpen}" @click="langOpen=!langOpen" :title="t('language')">
-          <span x-html="svg('globe')"></span><span class="foot-langcode" x-text="lang.toUpperCase()"></span>
+          <span x-html="svg('languages')"></span><span class="foot-langcode" x-text="lang.toUpperCase()"></span>
         </button>
         <div class="foot-langmenu" x-show="langOpen" @click.outside="langOpen=false" x-transition style="display:none">
           <template x-for="l in langs" :key="l">

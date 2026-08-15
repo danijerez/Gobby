@@ -523,6 +523,11 @@ func markOpened(db *sql.DB, libraryKey string, id int64) error {
 	return err
 }
 
+func deleteItemRow(db *sql.DB, libraryKey string, id int64) error {
+	_, err := db.Exec(`DELETE FROM items WHERE id=? AND library_key=?`, id, libraryKey)
+	return err
+}
+
 func setProgress(db *sql.DB, libraryKey string, id int64, secs int) error {
 	if secs < 0 {
 		secs = 0

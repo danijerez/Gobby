@@ -11,7 +11,7 @@
     <img alt="Alpine.js" src="https://img.shields.io/badge/Alpine.js-8BC0D0?logo=alpinedotjs&logoColor=black">
     <img alt="MCP" src="https://img.shields.io/badge/MCP-server-6E56CF">
     <img alt="Cloudflare" src="https://img.shields.io/badge/Cloudflare-Tunnel-F38020?logo=cloudflare&logoColor=white">
-    <img alt="version" src="https://img.shields.io/badge/version-0.2.0-2ea44f">
+    <img alt="version" src="https://img.shields.io/badge/version-0.2.1-2ea44f">
     <img alt="license" src="https://img.shields.io/badge/license-MIT-blue">
   </p>
 
@@ -124,11 +124,15 @@ another way to wake Gobby, not a replacement.
 - **Keyboard player** — space to pause, ←/→ to seek, `f` for fullscreen.
 - **Reads epub inline** — a paginated reader (epub.js) that remembers your page.
 - **Voice search** — tap the mic and speak your query (where the browser supports it).
-- **Reveal & upload** (on the machine running Gobby) — open a file's folder in your
-  OS explorer, or drop a file into a folder from the Files tab.
+- **Reveal, upload & delete** (on the machine running Gobby) — open a file's folder
+  in your OS explorer, drop a file into a folder from the Files tab, or delete a
+  file from disk (host-only, with confirmation). Everyone else stays read-only.
+- **Filter the Files tree** — a search box that narrows the size-tree as you type.
+- **Cast to a TV** — Gobby also serves over **HTTPS** (self-signed, on the next port)
+  so the browser's Cast SDK works on the LAN; the QR points there.
 - **Remote access** — one click opens a temporary **Cloudflare tunnel** (public link + QR),
   gated by a per-tunnel key so a stray URL alone can't reach your library.
-- **Cast to a TV**, preview PDFs/audio/images inline, and a little sound for every tap.
+- **Preview PDFs/audio/images inline**, and a little sound for every tap.
 - **Read-only for guests** — anyone arriving through the public tunnel can look, not edit.
 - **Updates himself** — from the *About* screen Gobby checks GitHub for a newer
   release and swaps his own binary (and ffmpeg) in place. Restart and he's new.

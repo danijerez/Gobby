@@ -77,9 +77,9 @@ function gobby() {
       es: {
         search: 'Buscar en tu biblioteca…', series: 'Series', movie: 'Películas',
         audio: 'Música', book: 'Libros', files: 'Ficheros', watch: 'Pendientes',
-        albums: 'Álbumes', authors: 'Autores', movies: 'Películas', singles: 'Sueltos', folders: 'Carpetas', looseFiles: 'Sueltos', filesUnit: 'ficheros',
+        albums: 'Álbumes', authors: 'Autores', movies: 'Películas', singles: 'Sueltos', folders: 'Carpetas', looseFiles: 'Sueltos', filesUnit: 'ficheros', filterFiles: 'Filtrar ficheros…',
         empty: 'Nada por aquí todavía.', episodes: 'episodios', tracks: 'temas', books: 'libros',
-        title: 'Título', notes: 'Notas', rating: 'Valoración', location: 'Ubicación', reveal: 'Abrir carpeta', uploadHere: 'Subir aquí',
+        title: 'Título', notes: 'Notas', rating: 'Valoración', location: 'Ubicación', reveal: 'Abrir carpeta', uploadHere: 'Subir aquí', deleteFile: 'Borrar del disco', deleteConfirm: '¿Borrar «{name}» del disco? No se puede deshacer.', deleteFailed: 'No se pudo borrar.',
         director: 'Dirección', cast: 'Reparto', back: 'Atrás', add: 'Añadir',
         enrichThemes: 'Buscar carátulas', theme: 'Cambiar tema', fetching: 'Buscando carátulas', sound: 'Sonido', language: 'Idioma',
         forceAll: 'Rebuscar todo (sobrescribe)', stop: 'Parar',
@@ -108,7 +108,7 @@ function gobby() {
         clearFilters: 'Limpiar filtros',
         connect: 'Conectar dispositivos',
         devices: 'Dispositivos conectados', thisDevice: 'este dispositivo', noDevices: 'Ningún dispositivo aún.', now: 'ahora',
-        changeCover: 'Cambiar carátula', coverFromUrl: 'Desde URL', coverUrlPrompt: 'Pega la URL de la imagen:', openTab: 'Abrir en pestaña', castTo: 'Transmitir a TV', continueAt: 'Continúa:', resumeHere: 'Reanudar',
+        changeCover: 'Cambiar carátula', coverFromUrl: 'Desde URL', coverUrlPrompt: 'Pega la URL de la imagen:', openTab: 'Abrir en pestaña', castTo: 'Transmitir a TV', moreActions: 'Más', castStop: 'Parar transmisión', castFailed: 'No se pudo transmitir. El Chromecast necesita HTTP y formato compatible (mp4).', continueAt: 'Continúa:', resumeHere: 'Reanudar',
         customFields: 'Campos', addField: 'Añadir campo', fieldName: 'Nombre', fieldValue: 'Valor',
         tunnelStart: 'Abrir túnel público', tunnelStop: 'Cerrar túnel', tunnelStarting: 'Preparando túnel…', tabLocal: 'Red local', tabInternet: 'Internet',
         mcpConnect: 'Conectar MCP', mcpIntro: 'Gobby expone un servidor MCP para que Claude pueda buscar en tu biblioteca y gestionar la lista de pendientes. Añádelo con una de estas formas:',
@@ -121,9 +121,9 @@ function gobby() {
       en: {
         search: 'Search your library…', series: 'Series', movie: 'Movies',
         audio: 'Music', book: 'Books', files: 'Files', watch: 'Watchlist',
-        albums: 'Albums', authors: 'Authors', movies: 'Movies', singles: 'Singles', folders: 'Folders', looseFiles: 'Loose', filesUnit: 'files',
+        albums: 'Albums', authors: 'Authors', movies: 'Movies', singles: 'Singles', folders: 'Folders', looseFiles: 'Loose', filesUnit: 'files', filterFiles: 'Filter files…',
         empty: 'Nothing here yet.', episodes: 'episodes', tracks: 'tracks', books: 'books',
-        title: 'Title', notes: 'Notes', rating: 'Rating', location: 'Location', reveal: 'Open folder', uploadHere: 'Upload here',
+        title: 'Title', notes: 'Notes', rating: 'Rating', location: 'Location', reveal: 'Open folder', uploadHere: 'Upload here', deleteFile: 'Delete from disk', deleteConfirm: 'Delete "{name}" from disk? This cannot be undone.', deleteFailed: 'Could not delete.',
         director: 'Director', cast: 'Cast', back: 'Back', add: 'Add',
         enrichThemes: 'Fetch covers', theme: 'Toggle theme', fetching: 'Fetching covers', sound: 'Sound', language: 'Language',
         forceAll: 'Re-fetch all (overwrite)', stop: 'Stop',
@@ -152,7 +152,7 @@ function gobby() {
         clearFilters: 'Clear filters',
         connect: 'Connect devices',
         devices: 'Connected devices', thisDevice: 'this device', noDevices: 'No devices yet.', now: 'now',
-        changeCover: 'Change cover', coverFromUrl: 'From URL', coverUrlPrompt: 'Paste the image URL:', openTab: 'Open in tab', castTo: 'Cast to TV', continueAt: 'Up to:', resumeHere: 'Resume',
+        changeCover: 'Change cover', coverFromUrl: 'From URL', coverUrlPrompt: 'Paste the image URL:', openTab: 'Open in tab', castTo: 'Cast to TV', moreActions: 'More', castStop: 'Stop casting', castFailed: 'Could not cast. Chromecast needs HTTP and a compatible format (mp4).', continueAt: 'Up to:', resumeHere: 'Resume',
         customFields: 'Fields', addField: 'Add field', fieldName: 'Name', fieldValue: 'Value',
         tunnelStart: 'Open public tunnel', tunnelStop: 'Close tunnel', tunnelStarting: 'Preparing tunnel…', tabLocal: 'Local network', tabInternet: 'Internet',
         mcpConnect: 'Connect MCP', mcpIntro: 'Gobby exposes an MCP server so Claude can search your library and manage the watchlist. Add it one of these ways:',
@@ -165,9 +165,9 @@ function gobby() {
       fr: {
         search: 'Rechercher dans votre bibliothèque…', series: 'Séries', movie: 'Films',
         audio: 'Musique', book: 'Livres', files: 'Fichiers', watch: 'À voir',
-        albums: 'Albums', authors: 'Auteurs', movies: 'Films', singles: 'Isolés', folders: 'Dossiers', looseFiles: 'Isolés', filesUnit: 'fichiers',
+        albums: 'Albums', authors: 'Auteurs', movies: 'Films', singles: 'Isolés', folders: 'Dossiers', looseFiles: 'Isolés', filesUnit: 'fichiers', filterFiles: 'Filtrer les fichiers…',
         empty: 'Rien ici pour le moment.', episodes: 'épisodes', tracks: 'pistes', books: 'livres',
-        title: 'Titre', notes: 'Notes', rating: 'Note', location: 'Emplacement', reveal: 'Ouvrir le dossier', uploadHere: 'Téléverser ici',
+        title: 'Titre', notes: 'Notes', rating: 'Note', location: 'Emplacement', reveal: 'Ouvrir le dossier', uploadHere: 'Téléverser ici', deleteFile: 'Supprimer du disque', deleteConfirm: 'Supprimer « {name} » du disque ? Irréversible.', deleteFailed: 'Suppression impossible.',
         director: 'Réalisation', cast: 'Distribution', back: 'Retour', add: 'Ajouter',
         enrichThemes: 'Chercher les jaquettes', theme: 'Changer de thème', fetching: 'Recherche des jaquettes', sound: 'Son', language: 'Langue',
         forceAll: 'Tout rechercher (écrase)', stop: 'Arrêter',
@@ -196,7 +196,7 @@ function gobby() {
         clearFilters: 'Effacer les filtres',
         connect: 'Connecter des appareils',
         devices: 'Appareils connectés', thisDevice: 'cet appareil', noDevices: 'Aucun appareil pour le moment.', now: 'maintenant',
-        changeCover: 'Changer la jaquette', coverFromUrl: 'Depuis une URL', coverUrlPrompt: "Collez l'URL de l'image :", openTab: 'Ouvrir dans un onglet', castTo: 'Diffuser sur la TV', continueAt: 'Repris à :', resumeHere: 'Reprendre',
+        changeCover: 'Changer la jaquette', coverFromUrl: 'Depuis une URL', coverUrlPrompt: "Collez l'URL de l'image :", openTab: 'Ouvrir dans un onglet', castTo: 'Diffuser sur la TV', moreActions: 'Plus', castStop: 'Arrêter', castFailed: 'Diffusion impossible. Chromecast requiert HTTP et un format compatible (mp4).', continueAt: 'Repris à :', resumeHere: 'Reprendre',
         customFields: 'Champs', addField: 'Ajouter un champ', fieldName: 'Nom', fieldValue: 'Valeur',
         tunnelStart: 'Ouvrir un tunnel public', tunnelStop: 'Fermer le tunnel', tunnelStarting: 'Préparation du tunnel…', tabLocal: 'Réseau local', tabInternet: 'Internet',
         mcpConnect: 'Connecter MCP', mcpIntro: 'Gobby expose un serveur MCP pour que Claude puisse chercher dans votre bibliothèque et gérer la liste à voir. Ajoutez-le de l’une de ces façons :',
@@ -209,9 +209,9 @@ function gobby() {
       de: {
         search: 'Deine Bibliothek durchsuchen…', series: 'Serien', movie: 'Filme',
         audio: 'Musik', book: 'Bücher', files: 'Dateien', watch: 'Merkliste',
-        albums: 'Alben', authors: 'Autoren', movies: 'Filme', singles: 'Einzeln', folders: 'Ordner', looseFiles: 'Einzeln', filesUnit: 'Dateien',
+        albums: 'Alben', authors: 'Autoren', movies: 'Filme', singles: 'Einzeln', folders: 'Ordner', looseFiles: 'Einzeln', filesUnit: 'Dateien', filterFiles: 'Dateien filtern…',
         empty: 'Hier ist noch nichts.', episodes: 'Folgen', tracks: 'Titel', books: 'Bücher',
-        title: 'Titel', notes: 'Notizen', rating: 'Bewertung', location: 'Speicherort', reveal: 'Ordner öffnen', uploadHere: 'Hier hochladen',
+        title: 'Titel', notes: 'Notizen', rating: 'Bewertung', location: 'Speicherort', reveal: 'Ordner öffnen', uploadHere: 'Hier hochladen', deleteFile: 'Von Festplatte löschen', deleteConfirm: '„{name}“ von der Festplatte löschen? Nicht umkehrbar.', deleteFailed: 'Löschen fehlgeschlagen.',
         director: 'Regie', cast: 'Besetzung', back: 'Zurück', add: 'Hinzufügen',
         enrichThemes: 'Cover suchen', theme: 'Thema wechseln', fetching: 'Cover werden gesucht', sound: 'Ton', language: 'Sprache',
         forceAll: 'Alles neu suchen (überschreibt)', stop: 'Stopp',
@@ -240,7 +240,7 @@ function gobby() {
         clearFilters: 'Filter löschen',
         connect: 'Geräte verbinden',
         devices: 'Verbundene Geräte', thisDevice: 'dieses Gerät', noDevices: 'Noch keine Geräte.', now: 'jetzt',
-        changeCover: 'Cover ändern', coverFromUrl: 'Von URL', coverUrlPrompt: 'Bild-URL einfügen:', openTab: 'In Tab öffnen', castTo: 'An TV streamen', continueAt: 'Bis:', resumeHere: 'Fortsetzen',
+        changeCover: 'Cover ändern', coverFromUrl: 'Von URL', coverUrlPrompt: 'Bild-URL einfügen:', openTab: 'In Tab öffnen', castTo: 'An TV streamen', moreActions: 'Mehr', castStop: 'Stoppen', castFailed: 'Casting fehlgeschlagen. Chromecast braucht HTTP und ein kompatibles Format (mp4).', continueAt: 'Bis:', resumeHere: 'Fortsetzen',
         customFields: 'Felder', addField: 'Feld hinzufügen', fieldName: 'Name', fieldValue: 'Wert',
         tunnelStart: 'Öffentlichen Tunnel öffnen', tunnelStop: 'Tunnel schließen', tunnelStarting: 'Tunnel wird vorbereitet…', tabLocal: 'Lokales Netz', tabInternet: 'Internet',
         mcpConnect: 'MCP verbinden', mcpIntro: 'Gobby stellt einen MCP-Server bereit, damit Claude deine Bibliothek durchsuchen und die Merkliste verwalten kann. Füge ihn auf eine dieser Weisen hinzu:',
@@ -253,9 +253,9 @@ function gobby() {
       it: {
         search: 'Cerca nella tua libreria…', series: 'Serie', movie: 'Film',
         audio: 'Musica', book: 'Libri', files: 'File', watch: 'Da vedere',
-        albums: 'Album', authors: 'Autori', movies: 'Film', singles: 'Sciolti', folders: 'Cartelle', looseFiles: 'Sciolti', filesUnit: 'file',
+        albums: 'Album', authors: 'Autori', movies: 'Film', singles: 'Sciolti', folders: 'Cartelle', looseFiles: 'Sciolti', filesUnit: 'file', filterFiles: 'Filtra file…',
         empty: 'Qui non c’è ancora niente.', episodes: 'episodi', tracks: 'tracce', books: 'libri',
-        title: 'Titolo', notes: 'Note', rating: 'Valutazione', location: 'Posizione', reveal: 'Apri cartella', uploadHere: 'Carica qui',
+        title: 'Titolo', notes: 'Note', rating: 'Valutazione', location: 'Posizione', reveal: 'Apri cartella', uploadHere: 'Carica qui', deleteFile: 'Elimina dal disco', deleteConfirm: 'Eliminare «{name}» dal disco? Irreversibile.', deleteFailed: 'Impossibile eliminare.',
         director: 'Regia', cast: 'Cast', back: 'Indietro', add: 'Aggiungi',
         enrichThemes: 'Cerca copertine', theme: 'Cambia tema', fetching: 'Ricerca copertine', sound: 'Suono', language: 'Lingua',
         forceAll: 'Ricerca tutto (sovrascrive)', stop: 'Ferma',
@@ -284,7 +284,7 @@ function gobby() {
         clearFilters: 'Pulisci filtri',
         connect: 'Connetti dispositivi',
         devices: 'Dispositivi connessi', thisDevice: 'questo dispositivo', noDevices: 'Ancora nessun dispositivo.', now: 'ora',
-        changeCover: 'Cambia copertina', coverFromUrl: 'Da URL', coverUrlPrompt: 'Incolla l’URL dell’immagine:', openTab: 'Apri in scheda', castTo: 'Trasmetti alla TV', continueAt: 'Fino a:', resumeHere: 'Riprendi',
+        changeCover: 'Cambia copertina', coverFromUrl: 'Da URL', coverUrlPrompt: 'Incolla l’URL dell’immagine:', openTab: 'Apri in scheda', castTo: 'Trasmetti alla TV', moreActions: 'Altro', castStop: 'Ferma', castFailed: 'Impossibile trasmettere. Chromecast richiede HTTP e un formato compatibile (mp4).', continueAt: 'Fino a:', resumeHere: 'Riprendi',
         customFields: 'Campi', addField: 'Aggiungi campo', fieldName: 'Nome', fieldValue: 'Valore',
         tunnelStart: 'Apri tunnel pubblico', tunnelStop: 'Chiudi tunnel', tunnelStarting: 'Preparazione del tunnel…', tabLocal: 'Rete locale', tabInternet: 'Internet',
         mcpConnect: 'Connetti MCP', mcpIntro: 'Gobby espone un server MCP perché Claude possa cercare nella tua libreria e gestire la lista da vedere. Aggiungilo in uno di questi modi:',
@@ -297,9 +297,9 @@ function gobby() {
       pt: {
         search: 'Pesquisar na sua biblioteca…', series: 'Séries', movie: 'Filmes',
         audio: 'Música', book: 'Livros', files: 'Ficheiros', watch: 'Para ver',
-        albums: 'Álbuns', authors: 'Autores', movies: 'Filmes', singles: 'Soltos', folders: 'Pastas', looseFiles: 'Soltos', filesUnit: 'ficheiros',
+        albums: 'Álbuns', authors: 'Autores', movies: 'Filmes', singles: 'Soltos', folders: 'Pastas', looseFiles: 'Soltos', filesUnit: 'ficheiros', filterFiles: 'Filtrar ficheiros…',
         empty: 'Ainda não há nada aqui.', episodes: 'episódios', tracks: 'faixas', books: 'livros',
-        title: 'Título', notes: 'Notas', rating: 'Avaliação', location: 'Localização', reveal: 'Abrir pasta', uploadHere: 'Enviar aqui',
+        title: 'Título', notes: 'Notas', rating: 'Avaliação', location: 'Localização', reveal: 'Abrir pasta', uploadHere: 'Enviar aqui', deleteFile: 'Apagar do disco', deleteConfirm: 'Apagar «{name}» do disco? Não pode ser desfeito.', deleteFailed: 'Não foi possível apagar.',
         director: 'Realização', cast: 'Elenco', back: 'Voltar', add: 'Adicionar',
         enrichThemes: 'Procurar capas', theme: 'Mudar tema', fetching: 'A procurar capas', sound: 'Som', language: 'Idioma',
         forceAll: 'Procurar tudo (substitui)', stop: 'Parar',
@@ -328,7 +328,7 @@ function gobby() {
         clearFilters: 'Limpar filtros',
         connect: 'Ligar dispositivos',
         devices: 'Dispositivos ligados', thisDevice: 'este dispositivo', noDevices: 'Ainda sem dispositivos.', now: 'agora',
-        changeCover: 'Mudar capa', coverFromUrl: 'A partir de URL', coverUrlPrompt: 'Cole o URL da imagem:', openTab: 'Abrir em separador', castTo: 'Transmitir para a TV', continueAt: 'Até:', resumeHere: 'Retomar',
+        changeCover: 'Mudar capa', coverFromUrl: 'A partir de URL', coverUrlPrompt: 'Cole o URL da imagem:', openTab: 'Abrir em separador', castTo: 'Transmitir para a TV', moreActions: 'Mais', castStop: 'Parar', castFailed: 'Não foi possível transmitir. O Chromecast precisa de HTTP e formato compatível (mp4).', continueAt: 'Até:', resumeHere: 'Retomar',
         customFields: 'Campos', addField: 'Adicionar campo', fieldName: 'Nome', fieldValue: 'Valor',
         tunnelStart: 'Abrir túnel público', tunnelStop: 'Fechar túnel', tunnelStarting: 'A preparar o túnel…', tabLocal: 'Rede local', tabInternet: 'Internet',
         mcpConnect: 'Ligar MCP', mcpIntro: 'O Gobby expõe um servidor MCP para que o Claude possa pesquisar na sua biblioteca e gerir a lista para ver. Adicione-o de uma destas formas:',
@@ -364,6 +364,7 @@ function gobby() {
       window.addEventListener('hashchange', () => this.openFromHash());
       window.addEventListener('keydown', (e) => this._onPlayerKey(e));
       document.addEventListener('click', (e) => this._onDocClick(e));
+      this.auraNeutral();
       this.watchBackend();
     },
 
@@ -457,9 +458,9 @@ function gobby() {
     },
     // tabs with no content are hidden; watch/files always shown.
     visibleTabs() {
-      const all = ['home', 'series', 'movie', 'audio', 'book', 'files', 'watch'];
+      const all = ['series', 'movie', 'audio', 'book', 'files', 'watch'];
       if (!this.sections || !Object.keys(this.sections).length) return all;
-      return all.filter(t => t === 'home' || t === 'watch' || t === 'files' || this.sections[t]);
+      return all.filter(t => t === 'watch' || t === 'files' || this.sections[t]);
     },
 
     // ---- connect devices (QR + connected list) ----
@@ -614,6 +615,10 @@ function gobby() {
       this.lang = l;
       localStorage.setItem('gobby-lang', l);
     },
+    cycleLang() {
+      const i = this.langs.indexOf(this.lang);
+      this.setLang(this.langs[(i + 1) % this.langs.length]);
+    },
 
     svg(name) {
       const p = {
@@ -643,6 +648,7 @@ function gobby() {
         monitor: '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8M12 17v4"/>',
         volume: '<path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/>',
         globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20Z"/>',
+        languages: '<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>',
         info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
         alert: '<path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/>',
         clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
@@ -712,6 +718,7 @@ function gobby() {
     goHome() { this.goTab('home'); },
     goTab(tab) {
       this.tab = tab;
+      this.auraNeutral();
       this.stack = [{ view: 'home' }];
       // strip a residual #item hash, else back onto this entry reopens the old item
       history.replaceState({ gobby: true }, '', location.pathname + location.search);
@@ -731,17 +738,21 @@ function gobby() {
       this.tree = r.ok ? await r.json() : null;
     },
     toggleNode(p) { this.treeOpen[p] = !this.treeOpen[p]; },
-    // Flatten the tree into visible rows (respecting which folders are open) so
-    // Alpine can x-for a single list with an indent depth per row. parentSize is
-    // carried on each row so the size bar can show a node's share of its level.
+    treeQ: '',
+    _treeMatch(n, q) {
+      if ((n.name || '').toLowerCase().includes(q)) return true;
+      return (n.children || []).some(c => this._treeMatch(c, q));
+    },
     treeRows() {
       const out = [];
+      const q = this.treeQ.trim().toLowerCase();
       const walk = (n, depth) => {
         const kids = (n.children || []);
         const max = kids.reduce((m, c) => Math.max(m, c.size), 0) || 1;
         for (const c of kids) {
+          if (q && !this._treeMatch(c, q)) continue;
           out.push({ n: c, depth, siblingMax: max });
-          if (c.dir && this.treeOpen[c.path]) walk(c, depth + 1);
+          if (c.dir && (q || this.treeOpen[c.path])) walk(c, depth + 1);
         }
       };
       if (this.tree) walk(this.tree, 0);
@@ -855,8 +866,7 @@ function gobby() {
       history.pushState({ gobby: true }, '', hash || location.pathname);
     },
     back() {
-      // history.back() fires popstate, which does the single stack.pop() — popping
-      // here too would double-pop and skip a view.
+      if (this.showFilters) { this.showFilters = false; return; }
       if (this.stack.length > 1) history.back();
     },
 
@@ -893,6 +903,7 @@ function gobby() {
       this.groupID = '';
       this.editId = false;
       this.activeSeason = null;
+      this.auraFromCover((g.items || []).find(it => it.has_cover || it.cover_id) || g.items[0]);
       this.pushView({ view: 'series', group: g });
       // rich meta for the show is stored on the first episode
       if (g.items[0]) {
@@ -906,11 +917,13 @@ function gobby() {
 
     async openItem(it) {
       this.previewing = false;
+      this.moreOpen = false;
       this.closeEpub();
       this.stopVideo();
       this.editId = false; // starts locked so the id can't be edited by accident
       const r = await fetch(`/api/item/${it.id}`);
       const full = r.ok ? await r.json() : { ...it };
+      this.auraFromCover(full);
       this.pushView({ view: 'item', item: full });
     },
 
@@ -1097,17 +1110,30 @@ function gobby() {
     async cast(item) {
       try {
         const ctx = cast.framework.CastContext.getInstance();
-        await ctx.requestSession(); // opens the device picker (choose your TV)
+        await ctx.requestSession();
         const session = ctx.getCurrentSession();
         if (!session) return;
-        const url = this.absStream(item);
+        let url = this.absStream(item);
+        if (url.startsWith('https:')) url = url.replace(/^https:\/\/([^:/]+):(\d+)/, (m, h, p) => `http://${h}:${+p - 1}`);
         const mime = { video: 'video/mp4', audio: 'audio/mpeg' }[item.kind] || 'video/mp4';
         const mediaInfo = new chrome.cast.media.MediaInfo(url, mime);
         mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
         mediaInfo.metadata.title = item.title || '';
         await session.loadMedia(new chrome.cast.media.LoadRequest(mediaInfo));
+        this.casting = true;
         this.markOpened(item);
-      } catch (e) { /* user cancelled or no device */ }
+      } catch (e) {
+        this.casting = false;
+        if (e && e.code && e.code !== 'cancel') alert(this.t('castFailed'));
+      }
+    },
+    casting: false,
+    stopCast() {
+      try {
+        const ctx = cast.framework.CastContext.getInstance();
+        ctx.endCurrentSession(true);
+      } catch (e) {}
+      this.casting = false;
     },
     // native share sheet; tunnel deep-link (with key) if public, else LAN stream
     async share(item) {
@@ -1130,6 +1156,7 @@ function gobby() {
       return '';
     },
     previewing: false,
+    moreOpen: false,
     togglePreview() {
       this.previewing = !this.previewing;
       if (this.previewing && this.previewType(this.top.item) === 'epub') {
@@ -1470,6 +1497,64 @@ function gobby() {
       return h > 0 ? `${h}:${p(m)}:${p(sec)}` : `${m}:${p(sec)}`;
     },
     // record an explicit open (play/preview/open-with) so it shows in "continue".
+    auraStyle: '',
+    _auraFrom(a, b) {
+      return `radial-gradient(120% 90% at 15% 10%, ${a}cc, transparent 62%),` +
+             `radial-gradient(120% 95% at 85% 18%, ${b}cc, transparent 62%),` +
+             `radial-gradient(110% 110% at 50% 100%, ${a}88, transparent 72%)`;
+    },
+    auraNeutral() {
+      const dark = document.documentElement.getAttribute('data-theme') !== 'light';
+      this.auraStyle = dark
+        ? 'background-image:' + `radial-gradient(120% 90% at 20% 0%, #ffffff10, transparent 60%),radial-gradient(120% 90% at 80% 100%, #ffffff0a, transparent 60%)`
+        : 'background-image:' + `radial-gradient(120% 90% at 20% 0%, #00000010, transparent 60%),radial-gradient(120% 90% at 80% 100%, #0000000a, transparent 60%)`;
+    },
+    auraFromCover(item) {
+      if (!item || !(item.has_cover || item.cover_id)) { this.auraNeutral(); return; }
+      this._auraFromImgURL(`/api/item/${item.cover_id || item.id}/cover`);
+    },
+    auraFromPoster(url) {
+      if (!url) { this.auraNeutral(); return; }
+      this._auraFromImgURL(url);
+    },
+    _auraFromImgURL(src) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const c = document.createElement('canvas');
+          const w = c.width = 32, h = c.height = 32;
+          const ctx = c.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const d = ctx.getImageData(0, 0, w, h).data;
+          const px = [];
+          for (let i = 0; i < d.length; i += 4) {
+            const rr = d[i], gg = d[i + 1], bb = d[i + 2];
+            const mx = Math.max(rr, gg, bb), mn = Math.min(rr, gg, bb);
+            if (mx > 30 && mx < 250) px.push({ rr, gg, bb, sat: mx - mn });
+          }
+          if (px.length < 4) { this.auraNeutral(); return; }
+          px.sort((a, b) => b.sat - a.sat);
+          const vivid = px.slice(0, Math.max(6, px.length >> 2));
+          const c1 = vivid[0];
+          let c2 = vivid[0], best = -1;
+          for (const p of vivid) {
+            const dist = Math.abs(p.rr - c1.rr) + Math.abs(p.gg - c1.gg) + Math.abs(p.bb - c1.bb);
+            if (dist > best) { best = dist; c2 = p; }
+          }
+          const hex = (p) => '#' + [p.rr, p.gg, p.bb].map(v => v.toString(16).padStart(2, '0')).join('');
+          this.auraStyle = 'background-image:' + this._auraFrom(hex(c1), hex(c2));
+        } catch (e) { this.auraNeutral(); }
+      };
+      img.onerror = () => this.auraNeutral();
+      img.src = src;
+    },
+    async deleteFile(item) {
+      if (!confirm(this.t('deleteConfirm').replace('{name}', item.title || item.rel_path))) return;
+      const r = await fetch(`/api/item/${item.id}/file`, { method: 'DELETE' }).catch(() => null);
+      if (r && r.ok) { this.back(); this.loadHome(); }
+      else alert(this.t('deleteFailed'));
+    },
     markOpened(item) { fetch(`/api/item/${item.id}/opened`, { method: 'POST' }).catch(() => {}); },
     // percent watched for the card bar; 0 hides it
     progressPct(it) {
@@ -1742,7 +1827,7 @@ function gobby() {
       this.loadWatch();
     },
     // open a watchlist entry's detail page (same layout as media)
-    openWatch(w) { this.pushView({ view: 'watchitem', watch: { ...w } }); },
+    openWatch(w) { this.auraFromPoster(w.poster); this.pushView({ view: 'watchitem', watch: { ...w } }); },
     async saveWatchNote(w) {
       await fetch(`/api/watchlist/${w.id}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },

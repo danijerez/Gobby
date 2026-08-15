@@ -50,6 +50,21 @@ body {
   padding-bottom: calc(var(--bottomnav, 0px) + var(--footer-h, 42px) + env(safe-area-inset-bottom, 0px));
 }
 
+.aura {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-repeat: no-repeat; background-size: cover;
+  opacity: .6; filter: blur(10px); transform: scale(1.05);
+  transition: opacity .8s ease;
+}
+:root[data-theme="light"] .aura { opacity: .45; }
+.aura::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(to bottom,
+    color-mix(in srgb, var(--bg) 40%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 70%, transparent) 100%);
+}
+header, main, footer, .modal-bg, .offline-curtain, .bottom-nav { position: relative; z-index: 1; }
+
 header {
   position: sticky; top: 0; z-index: 20;
   display: flex; align-items: center; gap: 10px;
@@ -57,7 +72,7 @@ header {
   background: color-mix(in srgb, var(--bg) 82%, transparent);
   backdrop-filter: blur(14px);
 }
-.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: .5px; background: none; border: 0; cursor: pointer; padding: 0; }
+.brand { display: flex; align-items: center; background: none; border: 0; cursor: pointer; padding: 0; flex: none; }
 /* logo: mask the svg silhouette and fill it with --text, so it's dark on the
    light theme and light on the dark theme — always contrasts with the header */
 .brand-logo {
@@ -80,8 +95,8 @@ header {
 /* collapsed: a pill that reads as a search box ("🔍 Buscar…"); expanded: full field */
 /* collapsed: shrink to content so the funnel hugs the search pill (not pushed to
    the far right). Expanded: grow to a real field. */
-.search-wrap { display: flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0; }
-.search-wrap.open { flex: 1; max-width: 480px; }
+.search-wrap { display: flex; align-items: center; gap: 6px; flex: none; min-width: 0; }
+.search-wrap.open { flex: 0 1 420px; }
 /* funnel sits right next to the search pill, same round style */
 .search-wrap .filter-btn {
   flex: none; width: 34px; height: 34px; display: grid; place-items: center; cursor: pointer;
@@ -254,6 +269,7 @@ a.icon-btn { text-decoration: none; }
 .tunnel-err .ic { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
 
 /* filters: slim drawer from the right, results stay visible and update live */
+.fd-backdrop { position: fixed; inset: 0; z-index: 44; background: rgba(0,0,0,.35); }
 .filter-drawer {
   position: fixed; top: 0; right: 0; bottom: 0; z-index: 45; width: min(300px, 88vw);
   display: flex; flex-direction: column; gap: 14px; overflow-y: auto;
@@ -304,6 +320,7 @@ a.icon-btn { text-decoration: none; }
 .chip-clear:hover { border-color: #ef4444; color: #ef4444; }
 .chip-clear .ic { width: 13px; height: 13px; }
 .back-btn { border-color: transparent; }
+.back-btn.hidden { visibility: hidden; }
 
 /* inline header progress — fills the gap between the item count and the icons */
 .hprog { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
@@ -330,6 +347,9 @@ a.icon-btn { text-decoration: none; }
 }
 .action:hover { border-color: var(--accent); }
 .action.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.more-actions { margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.action.danger { color: #ff6b6b; }
+.action.danger:hover { border-color: #ff6b6b; background: color-mix(in srgb, #ff6b6b 12%, transparent); }
 .action .ic { width: 15px; height: 15px; }
 
 .identify { display: flex; gap: 8px; align-items: center; }
@@ -349,26 +369,31 @@ a.icon-btn { text-decoration: none; }
    wavy divider sits at the bar's own bottom edge (inside its box), so it shares the
    bar's frosted background and --line colour instead of protruding into the content. */
 nav.tabs {
-  position: sticky; top: 62px; z-index: 19;   /* == header height, so no gap/overlap when scrolled */
-  display: flex; gap: 4px; padding: 6px 22px; flex-wrap: wrap;
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--line);
+  display: flex; gap: 2px; flex-wrap: nowrap; overflow-x: auto;
+  scrollbar-width: none;
 }
-/* first tab aligns flush with the section content, not indented by its padding */
-nav.tabs button:first-child { padding-left: 0; }
-nav.tabs button:first-child.on::after { left: 0; }
+nav.tabs::-webkit-scrollbar { height: 0; }
+nav.tabs-mobile { display: none; }
+.menu-mobile-only { display: none; }
+.tree-search {
+  display: flex; align-items: center; gap: 8px; flex: 1; max-width: 340px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px;
+}
+.tree-search svg { width: 15px; height: 15px; color: var(--muted); flex: none; }
+.tree-search input { flex: 1; min-width: 0; background: none; border: 0; color: var(--text); font-size: 14px; outline: none; }
+.tree-search button { background: none; border: 0; color: var(--muted); cursor: pointer; display: grid; place-items: center; padding: 0; }
+.tree-search button svg { width: 14px; height: 14px; }
 nav.tabs button {
-  display: inline-flex; align-items: center; gap: 7px;
+  display: inline-flex; align-items: center; gap: 7px; flex: none;
   background: none; border: 0; color: var(--muted); cursor: pointer;
-  font-family: var(--font-display); font-size: 16px; font-weight: 700; letter-spacing: .4px;
-  padding: 8px 16px; border-radius: 8px; position: relative;
+  font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: .4px;
+  padding: 7px 12px; border-radius: 8px; position: relative;
 }
 nav.tabs button span { display: flex; }
 nav.tabs button:hover { color: var(--text); }
 nav.tabs button.on { color: var(--text); }
 nav.tabs button.on::after {
-  content: ""; position: absolute; left: 16px; right: 16px; bottom: 2px; height: 2px;
+  content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px;
   background: var(--accent); border-radius: 2px;
 }
 
@@ -874,6 +899,8 @@ main, .watch { padding: 8px 22px; }
 .foot-path { font-family: ui-monospace, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .foot-spacer { flex: 1; }
 .foot-row { display: flex; align-items: center; gap: 4px; flex: none; }
+.foot-hprog { flex: 0 1 320px; min-width: 120px; }
+.foot-hprog .hprog-lbl { font-size: 11px; }
 .foot-btn {
   height: 30px; min-width: 30px; padding: 0 6px; display: inline-flex; align-items: center;
   justify-content: center; gap: 5px; border-radius: 7px;
@@ -933,7 +960,7 @@ main, .watch { padding: 8px 22px; }
    (equal specificity → source order decides). Header collapses; tabs become a
    fixed bottom navigation bar; posters go two-up. */
 @media (max-width: 640px) {
-  :root { --bottomnav: 64px; --footer-h: 0px; }  /* footer is in-flow on mobile */
+  :root { --bottomnav: 64px; --footer-h: 34px; }
 
   /* header is now just brand + search + overflow menu, so it fits one row: the
      search pill grows to fill the middle, the menu stays pinned right. */
@@ -941,21 +968,32 @@ main, .watch { padding: 8px 22px; }
     gap: 8px; padding: 10px 14px calc(10px + env(safe-area-inset-top,0px));
   }
   .brand { font-size: 20px; }
-  .search-toggle { max-width: none; }   /* fill the middle so it clearly reads as search */
-  .search { padding-top: 12px; padding-bottom: 12px; } /* 44px tap target */
-  .spacer { display: none; }
-  .foot-path { display: none; }         /* keep the folder icon, drop the long path */
+  .spacer { display: block; flex: 1; }
+  .search-wrap { flex: none; }
+  .search-wrap.open { flex: 1; }
+  .search { padding-top: 12px; padding-bottom: 12px; }
+  .foot-path { display: none; }
 
-  nav.tabs {
-    position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 40;
+  nav.tabs-desktop { display: none; }
+  nav.tabs-mobile {
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 40;
     margin: 0; padding: 6px 0 calc(6px + env(safe-area-inset-bottom,0px));
-    gap: 0; flex-wrap: nowrap;
-    background: color-mix(in srgb, var(--bg) 92%, transparent);
-    backdrop-filter: blur(14px); border-top: 1px solid var(--line); border-bottom: 0;
+    gap: 0; flex-wrap: nowrap; overflow: visible;
+    background: color-mix(in srgb, var(--bg) 96%, transparent);
+    backdrop-filter: blur(14px); border-top: 1px solid var(--line);
   }
 
-  /* footer flows at the end of content (above the fixed bottom-nav), not a 2nd fixed bar */
-  .site-footer { position: static; bottom: auto; }
+  .menu-mobile-only { display: flex; }
+  .menu-sep.menu-mobile-only { display: block; }
+  .foot-meta, .foot-row, .foot-spacer { display: none; }
+  .site-footer {
+    position: fixed; bottom: var(--bottomnav); z-index: 14; padding: 0;
+    background: none; backdrop-filter: none; border-top: 0;
+  }
+  .site-footer:not([style*="display: none"]) .foot-hprog {
+    background: color-mix(in srgb, var(--bg) 96%, transparent);
+    backdrop-filter: blur(8px); padding: 4px 12px; border-top: 1px solid var(--line);
+  }
   nav.tabs button {
     flex: 1 1 0; flex-direction: column; gap: 3px;
     padding: 6px 1px; font-size: 9.5px; letter-spacing: 0; min-width: 0;

@@ -11,7 +11,7 @@
     <img alt="Alpine.js" src="https://img.shields.io/badge/Alpine.js-8BC0D0?logo=alpinedotjs&logoColor=black">
     <img alt="MCP" src="https://img.shields.io/badge/MCP-server-6E56CF">
     <img alt="Cloudflare" src="https://img.shields.io/badge/Cloudflare-Tunnel-F38020?logo=cloudflare&logoColor=white">
-    <img alt="version" src="https://img.shields.io/badge/version-0.2.0-2ea44f">
+    <img alt="version" src="https://img.shields.io/badge/version-0.2.1-2ea44f">
     <img alt="license" src="https://img.shields.io/badge/license-MIT-blue">
   </p>
 
@@ -128,11 +128,15 @@ contenedor es solo otra forma de despertar a Gobby, no un reemplazo.
 - **Reproductor con teclado** — espacio para pausar, ←/→ para saltar, `f` para pantalla completa.
 - **Lee epub en línea** — un lector paginado (epub.js) que recuerda tu página.
 - **Búsqueda por voz** — toca el micro y dicta tu búsqueda (donde el navegador lo soporte).
-- **Abrir y subir** (en el equipo que ejecuta Gobby) — abre la carpeta de un fichero en
-  tu explorador, o suelta un fichero en una carpeta desde la pestaña Ficheros.
+- **Abrir, subir y borrar** (en el equipo que ejecuta Gobby) — abre la carpeta de un
+  fichero en tu explorador, suelta un fichero en una carpeta desde la pestaña Ficheros,
+  o borra un fichero del disco (solo-host, con confirmación). El resto queda en solo-lectura.
+- **Filtra el árbol de Ficheros** — un buscador que reduce el árbol de tamaños al escribir.
+- **Transmite a la TV** — Gobby también sirve por **HTTPS** (autofirmado, en el puerto siguiente)
+  para que el Cast del navegador funcione en la red local; el QR apunta ahí.
 - **Acceso remoto** — un clic abre un **túnel Cloudflare** temporal (enlace público + QR),
   protegido por una clave por túnel: una URL suelta por sí sola no llega a tu biblioteca.
-- **Transmite a la TV**, previsualiza PDF/audio/imágenes en línea, y un sonidito para cada toque.
+- **Previsualiza PDF/audio/imágenes en línea**, y un sonidito para cada toque.
 - **Solo lectura para invitados** — cualquiera que llegue por el túnel público puede mirar, no editar.
 - **Se actualiza solo** — desde la pantalla *Acerca de*, Gobby comprueba GitHub por
   una release más nueva y sustituye su propio binario (y ffmpeg) en el sitio.

@@ -9,13 +9,14 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 
 	"github.com/mdp/qrterminal/v3"
 )
 
-var version = "0.2.0"
+var version = "0.2.1"
 
 var (
 	flagPath    = flag.String("p", envOr("GOBBY_PATH", ""), "carpeta a escanear (por defecto: junto al binario)")
@@ -33,6 +34,8 @@ func envOr(key, def string) string {
 
 func main() {
 	flag.Parse()
+
+	version = strings.TrimPrefix(version, "v")
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -122,11 +125,16 @@ func printAccess(port, version string) {
 	if host == "" {
 		host = "localhost"
 	}
-	url := fmt.Sprintf("http://%s:%s", host, port)
+	httpURL := fmt.Sprintf("http://%s:%s", host, port)
+	qrURL := httpURL
+	if p, err := strconv.Atoi(port); err == nil {
+		qrURL = fmt.Sprintf("https://%s:%d", host, p+1)
+	}
 
 	fmt.Fprintf(os.Stderr, "\n  Gobby %s 🧦\n", version)
-	fmt.Fprintf(os.Stderr, "  %s\n\n", url)
-	qrterminal.GenerateHalfBlock(url, qrterminal.M, os.Stderr)
+	fmt.Fprintf(os.Stderr, "  %s\n", httpURL)
+	fmt.Fprintf(os.Stderr, "  %s\n\n", qrURL)
+	qrterminal.GenerateHalfBlock(qrURL, qrterminal.M, os.Stderr)
 }
 
 func lanIP() string {
