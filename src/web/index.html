@@ -55,7 +55,7 @@
               @click="showFilters = !showFilters" :title="t('filters')" x-html="svg('filter')"></button>
       <div class="chips-inline" x-show="top.view === 'home' && tab !== 'watch' && activeChips().length && !searchOpen">
         <template x-for="c in activeChips()" :key="c.k">
-          <span class="filter-chip"><span x-text="c.label"></span><button @click="removeChip(c.k)" :title="t('remove')" x-html="svg('close')"></button></span>
+          <span class="filter-chip"><span class="chip-dot" x-show="c.dot" :style="'background:'+c.dot"></span><span x-text="c.label"></span><button @click="removeChip(c.k)" :title="t('remove')" x-html="svg('close')"></button></span>
         </template>
         <button class="chip-clear" @click="clearFilters()" :title="t('clearFilters')" x-html="svg('close')"></button>
       </div>
@@ -164,6 +164,14 @@
         <template x-for="g in (info.genres || [])" :key="g"><option :value="g" x-text="g"></option></template>
       </select>
     </label>
+    <div class="fd-field" x-show="(info.colors || []).length"><span class="fd-lbl"><span x-html="svg('palette')"></span> <span x-text="t('fColor')"></span></span>
+      <div class="color-swatches">
+        <template x-for="c in (info.colors || [])" :key="c">
+          <button type="button" class="color-sw" :class="{on: filters.color === c}" :style="'background:'+colorHex(c)"
+                  @click="filters.color = (filters.color === c ? '' : c); load()" :title="c"></button>
+        </template>
+      </div>
+    </div>
     <button class="filter-clear" x-show="activeChips().length" @click="clearFilters()">
       <span x-html="svg('trash')"></span> <span x-text="t('clearFilters')"></span>
     </button>
@@ -260,7 +268,38 @@
 
   </main>
 
-  <main x-show="top.view === 'home' && tab !== 'watch' && tab !== 'home' && tab !== 'files' && !searching()">
+  <main class="photos-view" x-show="top.view === 'home' && tab === 'photos' && !searching()" style="display:none">
+    <div class="section-head"><h2><span x-html="svg('image')"></span> <span x-text="t('photos')"></span></h2><span class="count" x-text="looseTotal"></span></div>
+    <div class="photo-grid">
+      <template x-for="it in loose" :key="it.id">
+        <button class="photo" @click="openLightbox(it)">
+          <img loading="lazy" :src="streamURL(it)" :alt="it.title">
+        </button>
+      </template>
+    </div>
+    <p class="empty" x-show="!loose.length" x-text="t('empty')"></p>
+    <div class="pager" x-show="pages() > 1">
+      <button @click="goPage(page-1)" :disabled="page<=1" x-html="svg('back')"></button>
+      <span x-text="page + ' / ' + pages()"></span>
+      <button @click="goPage(page+1)" :disabled="page>=pages()" x-html="svg('back')" style="transform:rotate(180deg)"></button>
+    </div>
+  </main>
+
+  <div class="lightbox" x-show="lightbox" @click="lightbox=null" @keydown.window.escape="lightbox=null" style="display:none">
+    <img :src="lightbox ? streamURL(lightbox) : ''" :alt="lightbox?.title" @click.stop
+         @load="lbW=$event.target.naturalWidth; lbH=$event.target.naturalHeight">
+    <button class="lb-close" @click="lightbox=null" x-html="svg('close')"></button>
+    <button class="lb-info-btn" @click.stop="lbInfo=!lbInfo" :class="{active: lbInfo}" x-html="svg('info')"></button>
+    <dl class="lb-info facts" x-show="lightbox && lbInfo" @click.stop>
+      <div class="fact"><dt><span x-html="svg('image')"></span> <span x-text="t('name')"></span></dt><dd x-text="photoName(lightbox)"></dd></div>
+      <div class="fact"><dt><span x-html="svg('clapper')"></span> <span x-text="t('fFormat')"></span></dt><dd x-text="photoExt(lightbox)"></dd></div>
+      <div class="fact" x-show="lbW"><dt><span x-html="svg('monitor')"></span> <span x-text="t('resolution')"></span></dt><dd x-text="lbW + ' × ' + lbH"></dd></div>
+      <div class="fact"><dt><span x-html="svg('hdd')"></span> <span x-text="t('size')"></span></dt><dd x-text="fmtSize(lightbox?.size)"></dd></div>
+      <div class="fact"><dt><span x-html="svg('folder')"></span> <span x-text="t('location')"></span></dt><dd class="mono" x-text="lightbox?.rel_path"></dd></div>
+    </dl>
+  </div>
+
+  <main x-show="top.view === 'home' && tab !== 'watch' && tab !== 'home' && tab !== 'files' && tab !== 'photos' && !searching()">
     <template x-if="groups.length">
       <div>
         <div class="section-head"><h2 x-text="groupLabel()"></h2><span class="count" x-text="groups.length"></span></div>
@@ -952,6 +991,93 @@
           </ul>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Gobby chat: floating bubble + panel (settings if not configured) -->
+  <div class="gchat">
+    <button class="gchat-bubble" :class="{open: chatOpen}" @click="toggleChat()" :title="t('chatTitle')">
+      <span x-html="svg(chatOpen ? 'close' : 'chat')"></span>
+    </button>
+    <div class="gchat-panel" x-show="chatOpen" x-transition style="display:none">
+      <div class="gchat-head">
+        <span class="gchat-logo"></span>
+        <span class="gchat-name" x-text="chatView==='config' ? t('settings') : 'Gobby'"></span>
+        <span class="gchat-spacer"></span>
+        <button class="gchat-cfg-btn" x-show="chatView==='chat' && chatMsgs.length" @click="chatMsgs=[]" :title="t('chatClear')" x-html="svg('trash')"></button>
+        <button class="gchat-cfg-btn" :class="{active: chatView==='config'}" @click="chatView = chatView==='config' ? 'chat' : 'config'" :title="t('settings')" x-html="svg('gear')"></button>
+      </div>
+
+      <div class="gchat-cfg" x-show="chatView==='config'">
+        <p class="gchat-cfg-intro" x-text="t('chatCfgIntro')"></p>
+
+        <div class="prov-list" x-show="providers.length">
+          <template x-for="(p, i) in providers" :key="i">
+            <div class="prov-item" :class="{active: i===activeProv}">
+              <button type="button" class="prov-pick" @click="selectProvider(i)">
+                <span class="prov-dot" x-show="i===activeProv"></span>
+                <span class="prov-name" x-text="p.name || p.base_url"></span>
+                <span class="prov-model" x-text="p.model"></span>
+              </button>
+              <button type="button" class="prov-edit" @click="editProvider(i)" :title="t('settings')" x-html="svg('gear')"></button>
+              <button type="button" class="prov-del" @click="deleteProvider(i)" :title="t('remove')" x-html="svg('trash')"></button>
+            </div>
+          </template>
+        </div>
+
+        <button type="button" class="prov-add" x-show="!editing" @click="newProvider()" x-text="'+ ' + t('chatCfgAdd')"></button>
+
+        <div class="prov-form" x-show="editing">
+          <label x-text="t('chatCfgPreset')"></label>
+          <select @change="applyPreset($event.target.value)">
+            <option value="" x-text="t('chatCfgCustom')"></option>
+            <template x-for="p in llmPresets" :key="p.name"><option :value="p.name" x-text="p.name"></option></template>
+          </select>
+          <label x-text="t('name')"></label>
+          <input x-model="chatCfg.name" :placeholder="t('chatCfgCustom')">
+          <label>URL</label>
+          <input x-model="chatCfg.base_url" placeholder="http://localhost:11434/v1">
+          <label x-text="t('chatCfgModel')"></label>
+          <div class="gchat-model-row">
+            <input x-model="chatCfg.model" placeholder="llama3.1">
+            <button type="button" class="icon-sm" :class="{spin: modelsBusy}" @click="loadModels()" :disabled="!chatCfg.base_url || modelsBusy" :title="t('chatCfgLoad')" x-html="svg('refresh')"></button>
+          </div>
+          <select class="gchat-model-select" x-show="chatModels.length" x-model="chatCfg.model" size="6">
+            <template x-for="m in chatModels" :key="m"><option :value="m" x-text="m"></option></template>
+          </select>
+          <p class="gchat-model-status" x-show="modelsMsg" :class="{err: modelsErr}" x-text="modelsMsg"></p>
+          <label x-text="t('chatCfgKey')"></label>
+          <input type="password" x-model="chatCfg.key" :placeholder="chatCfg.keySet ? '••••••••' : t('chatCfgKeyOptional')" autocomplete="off">
+          <p class="gchat-cfg-hint" x-show="chatCfg.keySet"><span x-html="svg('check')"></span> <span x-text="t('chatCfgKeyKept')"></span></p>
+          <p class="gchat-cfg-hint"><span x-html="svg('info')"></span> <span x-text="t('chatCfgToolsHint')"></span></p>
+          <div class="prov-form-btns">
+            <button type="button" class="icon-btn2" @click="editing=false" :title="t('cancel')" x-html="svg('close')"></button>
+            <button type="button" class="icon-btn2 primary" @click="saveProvider()" :title="t('save')"><span x-html="svg('check')"></span> <span x-text="t('save')"></span></button>
+          </div>
+        </div>
+
+        <p class="gchat-cfg-key" x-show="envKey"><span x-html="svg('info')"></span> <span x-text="t('chatCfgKeyEnvActive')"></span></p>
+      </div>
+
+      <template x-if="chatView==='chat'">
+        <div style="display:contents">
+          <div class="gchat-log" x-ref="chatLog">
+            <template x-if="!chatMsgs.length">
+              <div class="gchat-hint" x-text="t('chatHint')"></div>
+            </template>
+            <template x-for="(m, i) in chatMsgs" :key="i">
+              <div class="gchat-msg" :class="m.role" x-text="m.text"></div>
+            </template>
+            <div class="gchat-msg gobby" x-show="chatBusy"><span class="gchat-typing"><i></i><i></i><i></i></span></div>
+          </div>
+          <form class="gchat-input" @submit.prevent="sendChat()">
+            <input x-ref="chatInput" x-model="chatInput" :placeholder="t('chatPlaceholder')" :disabled="chatBusy">
+            <button type="button" class="gchat-mic" x-show="voiceSupported && !chatBusy" :class="{listening: chatListening}" @click="chatVoice()" :title="t('chatPlaceholder')" x-html="svg('mic')"></button>
+            <button type="button" class="gchat-stop" x-show="chatBusy" @click="stopChat()" :title="t('stop')" x-html="svg('stop')"></button>
+            <button type="submit" x-show="!chatBusy" :disabled="!chatInput.trim()" x-html="svg('send')"></button>
+          </form>
+        </div>
+      </template>
     </div>
   </div>
 </body>

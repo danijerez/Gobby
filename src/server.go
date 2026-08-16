@@ -225,8 +225,8 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		var total int
 		db.QueryRow(`SELECT COUNT(*) FROM items WHERE library_key=? AND scan_state='present'`, lb.Key()).Scan(&total)
 		abs, _ := filepath.Abs(lb.Root())
-		genres, yMin, yMax := facets(db, lb.Key())
-		writeJSON(w, map[string]any{"root": abs, "total": total, "base": baseURL(r), "sections": nonEmptySections(db, lb.Key()), "owner": requestIsOwner(r), "local": requestIsLocal(r), "version": version, "genres": genres, "yearMin": yMin, "yearMax": yMax}, nil)
+		genres, colors, yMin, yMax := facets(db, lb.Key())
+		writeJSON(w, map[string]any{"root": abs, "total": total, "base": baseURL(r), "sections": nonEmptySections(db, lb.Key()), "owner": requestIsOwner(r), "local": requestIsLocal(r), "chat_ready": chatConfigured(db), "version": version, "genres": genres, "colors": colors, "yearMin": yMin, "yearMax": yMax}, nil)
 	})
 
 	mux.HandleFunc("GET /api/scan/status", func(w http.ResponseWriter, r *http.Request) {
@@ -248,6 +248,7 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 			Cover:     q.Get("cover"),
 			RatingMin: atoi(q.Get("rating_min")),
 			Genre:     q.Get("genre"),
+			Color:     q.Get("color"),
 		}
 		bv, err := browseView(db, lb.Key(), q.Get("kind"), q.Get("q"), f, atoi(q.Get("page")))
 		writeJSON(w, bv, err)
@@ -785,6 +786,95 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		uiBase = "http://" + net.JoinHostPort(ip, mcpPort)
 	}
 	mux.Handle("/mcp", mcpHandler(db, version, lb.Root(), lb.Key(), uiBase))
+
+	// redact strips keys from providers and reports which had one, so the UI never
+	// sees the stored key in plain text.
+	redact := func(st providersState) []map[string]any {
+		out := make([]map[string]any, len(st.Providers))
+		for i, p := range st.Providers {
+			out[i] = map[string]any{"name": p.Name, "base_url": p.BaseURL, "model": p.Model, "has_key": p.Key != ""}
+		}
+		return out
+	}
+	mux.HandleFunc("GET /api/chat/config", func(w http.ResponseWriter, r *http.Request) {
+		st := loadProviders(db)
+		writeJSON(w, map[string]any{"providers": redact(st), "active": st.Active, "env_key": os.Getenv("GOBBY_LLM_KEY") != ""}, nil)
+	})
+	mux.HandleFunc("GET /api/chat/models", func(w http.ResponseWriter, r *http.Request) {
+		base := r.URL.Query().Get("url")
+		key := r.URL.Query().Get("key")
+		if base == "" {
+			c := loadChatConfig(db)
+			base, key = c.BaseURL, c.Key
+		} else if key == "" {
+			for _, p := range loadProviders(db).Providers {
+				if p.BaseURL == base && p.Key != "" {
+					key = p.Key
+					break
+				}
+			}
+			if k := os.Getenv("GOBBY_LLM_KEY"); k != "" {
+				key = k
+			}
+		}
+		models, err := listLLMModels(r.Context(), base, key)
+		if err != nil {
+			http.Error(w, err.Error(), 502)
+			return
+		}
+		writeJSON(w, models, nil)
+	})
+	mux.HandleFunc("POST /api/chat/config", func(w http.ResponseWriter, r *http.Request) {
+		var in struct {
+			Providers []llmProvider `json:"providers"`
+			Active    int           `json:"active"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+		prev := loadProviders(db)
+		for i := range in.Providers {
+			in.Providers[i].BaseURL = strings.TrimSpace(in.Providers[i].BaseURL)
+			in.Providers[i].Model = strings.TrimSpace(in.Providers[i].Model)
+			in.Providers[i].Key = strings.TrimSpace(in.Providers[i].Key)
+			if in.Providers[i].Name == "" {
+				in.Providers[i].Name = in.Providers[i].BaseURL
+			}
+			// the UI sends "\x00keep" to mean "leave the stored key untouched"
+			if in.Providers[i].Key == "\x00keep" {
+				in.Providers[i].Key = ""
+				if m := matchProvider(prev.Providers, in.Providers[i]); m != nil {
+					in.Providers[i].Key = m.Key
+				}
+			}
+		}
+		_ = saveProviders(db, providersState{Providers: in.Providers, Active: in.Active})
+		st := loadProviders(db)
+		writeJSON(w, map[string]any{"providers": redact(st), "active": st.Active, "env_key": os.Getenv("GOBBY_LLM_KEY") != ""}, nil)
+	})
+
+	mux.HandleFunc("POST /api/chat", func(w http.ResponseWriter, r *http.Request) {
+		if !chatConfigured(db) {
+			http.Error(w, "chat no configurado", http.StatusServiceUnavailable)
+			return
+		}
+		var in struct {
+			Message string `json:"message"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&in); err != nil || strings.TrimSpace(in.Message) == "" {
+			http.Error(w, "mensaje vacío", 400)
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
+		defer cancel()
+		reply, err := runChat(ctx, db, lb.Key(), uiBase, in.Message)
+		if err != nil {
+			writeJSON(w, map[string]string{"reply": "Gobby no pudo pensar: " + err.Error()}, nil)
+			return
+		}
+		writeJSON(w, map[string]string{"reply": reply}, nil)
+	})
 
 	ui, err := fs.Sub(webFS, "web")
 	if err != nil {

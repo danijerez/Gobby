@@ -3,6 +3,27 @@
 All notable changes to Gobby are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.4.0]
+
+### Added
+- **Chat with Gobby** — a floating chat bubble that talks to any OpenAI-compatible
+  LLM (Ollama, LM Studio, OpenAI, Gemini, Groq, LiteLLM, OpenRouter, OmniRoute…)
+  and answers about your library using Gobby's own tools, in a shy house-elf voice.
+  Configure providers from the UI (preset picker, load-models to test the
+  connection), keep several and switch with a click, ask by voice, stop mid-reply.
+  API keys are stored per provider, redacted from responses and excluded from
+  database export; `GOBBY_LLM_KEY` still works as an override.
+- **Photo gallery** — images get their own tab: thumbnail grid, lightbox, and
+  per-image details (name, format, resolution, size).
+- **Filter by colour** — the dominant colour of every cover and photo is computed
+  and stored, so the library can be filtered by colour.
+
+### Fixed
+- Tolerate LLM error responses in any shape (string, object, or array) instead of
+  crashing on unmarshal (e.g. Gemini's OpenAI layer).
+- LM Studio: tool declarations now send `required: []` instead of null.
+- Loading a provider's model list uses its stored key (no more 404 after editing).
+
 ## [0.3.0]
 
 ### Added

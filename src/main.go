@@ -16,7 +16,7 @@ import (
 	"github.com/mdp/qrterminal/v3"
 )
 
-var version = "0.3.0"
+var version = "0.4.0"
 
 var (
 	flagPath    = flag.String("p", envOr("GOBBY_PATH", ""), "carpeta a escanear (por defecto: junto al binario)")
@@ -86,6 +86,7 @@ func main() {
 				slog.Info("automatic enrichment complete", "found", found)
 			}
 		}
+		backfillColors(db, libraryKey, root)
 	}()
 
 	addr := "0.0.0.0:" + *flagPort

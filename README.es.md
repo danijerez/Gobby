@@ -11,7 +11,7 @@
     <img alt="Alpine.js" src="https://img.shields.io/badge/Alpine.js-8BC0D0?logo=alpinedotjs&logoColor=black">
     <img alt="MCP" src="https://img.shields.io/badge/MCP-server-6E56CF">
     <img alt="Cloudflare" src="https://img.shields.io/badge/Cloudflare-Tunnel-F38020?logo=cloudflare&logoColor=white">
-    <img alt="version" src="https://img.shields.io/badge/version-0.3.0-2ea44f">
+    <img alt="version" src="https://img.shields.io/badge/version-0.4.0-2ea44f">
     <img alt="license" src="https://img.shields.io/badge/code-MIT-blue">
     <img alt="release binary" src="https://img.shields.io/badge/release%20binary-GPLv3-orange">
   </p>
@@ -87,6 +87,21 @@ Gobby imprime su nombre, versión y un enlace (con un QR) cuando despierta.
 
 Luego abre el enlace que Gobby imprime, o escanea el QR desde tu móvil. Misma casa, misma puerta.
 
+## Habla con Gobby 💬
+
+Una burbuja de chat en la esquina: pregúntale a Gobby por tu biblioteca en lenguaje
+natural ("¿qué pelis de acción no he visto?") — también por voz — y usa sus propias
+herramientas para responder, hablando como un elfo doméstico tímido.
+
+Apúntalo a cualquier endpoint **compatible con OpenAI** — Ollama, LM Studio, OpenAI,
+Gemini, Groq, o una pasarela como LiteLLM / OpenRouter / OmniRoute. Se configura en
+los ajustes de la burbuja: eliges un preset, cargas la lista de modelos (prueba la
+conexión), guardas. Puedes tener **varios proveedores** y cambiar con un clic.
+
+Las claves API se guardan por proveedor pero **nunca salen del equipo**: se ocultan
+en cada respuesta y se excluyen del exportado de la base de datos. La variable de
+entorno `GOBBY_LLM_KEY` sigue funcionando como override.
+
 ## Gobby en una caja 🐳
 
 Gobby corre igual de feliz sin pantalla dentro de un contenedor. El repo trae un
@@ -117,6 +132,10 @@ contenedor es solo otra forma de despertar a Gobby, no un reemplazo.
 - **Descarga carátulas y detalles** — de servicios gratuitos y sin claves (ver abajo) cuando se lo pides.
 - **Series, álbumes, autores** — agrupados con orden, con temporadas, episodios y sinopsis.
 - **Pestaña Ficheros** — un árbol de tamaños en color de todo el disco, para ver qué se come el espacio.
+- **Galería de fotos** — las imágenes tienen su pestaña: cuadrícula de miniaturas con
+  lightbox y detalles por imagen (nombre, formato, resolución, tamaño).
+- **Filtro por color** — Gobby lee el color dominante de cada carátula y foto, para
+  filtrar la biblioteca por color con un clic.
 - **Pendientes** — apunta cualquier cosa para ver/leer/escuchar después, con campos personalizados y carátulas.
 - **Reproduce en el navegador** — los mkv/avi se remultiplexan al vuelo con un
   **ffmpeg** slim (vídeo copiado, audio a AAC), así se reproducen donde los

@@ -11,7 +11,7 @@
     <img alt="Alpine.js" src="https://img.shields.io/badge/Alpine.js-8BC0D0?logo=alpinedotjs&logoColor=black">
     <img alt="MCP" src="https://img.shields.io/badge/MCP-server-6E56CF">
     <img alt="Cloudflare" src="https://img.shields.io/badge/Cloudflare-Tunnel-F38020?logo=cloudflare&logoColor=white">
-    <img alt="version" src="https://img.shields.io/badge/version-0.3.0-2ea44f">
+    <img alt="version" src="https://img.shields.io/badge/version-0.4.0-2ea44f">
     <img alt="license" src="https://img.shields.io/badge/code-MIT-blue">
     <img alt="release binary" src="https://img.shields.io/badge/release%20binary-GPLv3-orange">
   </p>
@@ -87,6 +87,21 @@ Gobby prints his name, version and a link (with a QR) when he wakes up.
 
 Then open the link Gobby prints, or scan the QR from your phone. Same house, same door.
 
+## Chat with Gobby 💬
+
+A chat bubble sits in the corner: ask Gobby about your library in plain language
+("what action films haven't I watched?") — by voice too — and he uses his own
+tools to answer, speaking like a shy house-elf.
+
+Point it at any **OpenAI-compatible** endpoint — Ollama, LM Studio, OpenAI,
+Gemini, Groq, or a gateway like LiteLLM / OpenRouter / OmniRoute. Configure it
+right in the bubble's settings: pick a preset, load the model list to test the
+connection, save. You can keep **several providers** and switch with a click.
+
+API keys are stored per provider but **never leave the machine**: they're
+redacted from every response and excluded from database export. A
+`GOBBY_LLM_KEY` env var still works as an override.
+
 ## Gobby in a box 🐳
 
 Gobby runs headless in a container just as happily. A `Dockerfile` and
@@ -116,6 +131,10 @@ another way to wake Gobby, not a replacement.
 - **Fetches covers & details** — from free, keyless services (see below) when you ask.
 - **Series, albums, authors** — grouped neatly, with seasons, episodes and synopses.
 - **Files tab** — a coloured size-tree of the whole disk, so you see what eats the space.
+- **Photo gallery** — images get their own tab: a thumbnail grid with a lightbox and
+  per-image details (name, format, resolution, size).
+- **Filter by colour** — Gobby reads the dominant colour of every cover and photo, so
+  you can filter the library by colour with a click.
 - **Watchlist** — note anything to watch/read/listen later, with custom fields and covers.
 - **Plays in the browser** — mkv/avi are remuxed on the fly with a slim **ffmpeg**
   (video copied, audio to AAC), so they play where browsers normally refuse.

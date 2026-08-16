@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -39,6 +40,7 @@ type Item struct {
 	Progress      int    `json:"progress"`
 	AudioIdx      int    `json:"audio_idx"`
 	SubIdx        int    `json:"sub_idx"`
+	Color         string `json:"color"`
 }
 
 type Meta struct {
@@ -86,6 +88,7 @@ CREATE TABLE IF NOT EXISTS items (
   progress   INTEGER DEFAULT 0,
   audio_idx  INTEGER DEFAULT 0,
   sub_idx    INTEGER DEFAULT -1,
+  color      TEXT,
   updated_at INTEGER,
   UNIQUE(library_key, rel_path)
 );
@@ -100,7 +103,24 @@ CREATE TABLE IF NOT EXISTS watchlist (
   done       INTEGER DEFAULT 0,
   created_at INTEGER
 );
+
+CREATE TABLE IF NOT EXISTS settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT
+);
 `
+
+func getSetting(db *sql.DB, key string) string {
+	var v string
+	db.QueryRow(`SELECT value FROM settings WHERE key=?`, key).Scan(&v)
+	return v
+}
+
+func setSetting(db *sql.DB, key, value string) error {
+	_, err := db.Exec(`INSERT INTO settings (key, value) VALUES (?,?)
+		ON CONFLICT(key) DO UPDATE SET value=excluded.value`, key, value)
+	return err
+}
 
 const itemIndexes = `
 CREATE INDEX IF NOT EXISTS idx_items_library_kind ON items(library_key, kind);
@@ -136,6 +156,7 @@ func openDB(path string) (*sql.DB, error) {
 	db.Exec(`ALTER TABLE items ADD COLUMN progress INTEGER DEFAULT 0`)
 	db.Exec(`ALTER TABLE items ADD COLUMN audio_idx INTEGER DEFAULT 0`)
 	db.Exec(`ALTER TABLE items ADD COLUMN sub_idx INTEGER DEFAULT -1`)
+	db.Exec(`ALTER TABLE items ADD COLUMN color TEXT`)
 
 	db.Exec(`UPDATE items SET added_at=COALESCE(updated_at,0) WHERE added_at=0`)
 
@@ -162,6 +183,14 @@ func openDB(path string) (*sql.DB, error) {
 		WHERE section='' OR section='files' AND section_source='auto'`)
 
 	_, _ = db.Exec(`UPDATE items SET enrich_state='found' WHERE enrich_state='pending' AND cover IS NOT NULL`)
+
+	_, _ = db.Exec(`UPDATE items SET section='photos', section_source='auto'
+		WHERE kind='file' AND section_source='auto' AND section<>'photos' AND (
+		  LOWER(rel_path) LIKE '%.jpg' OR LOWER(rel_path) LIKE '%.jpeg' OR
+		  LOWER(rel_path) LIKE '%.png' OR LOWER(rel_path) LIKE '%.gif' OR
+		  LOWER(rel_path) LIKE '%.webp' OR LOWER(rel_path) LIKE '%.bmp' OR
+		  LOWER(rel_path) LIKE '%.heic' OR LOWER(rel_path) LIKE '%.avif' OR
+		  LOWER(rel_path) LIKE '%.tiff')`)
 	return db, nil
 }
 
@@ -304,6 +333,44 @@ func markMissing(db *sql.DB, libraryKey string, runID int64) error {
 	return err
 }
 
+func backfillColors(db *sql.DB, libraryKey, root string) {
+	rows, err := db.Query(`SELECT id, rel_path, (cover IS NOT NULL) FROM items
+		WHERE library_key=? AND scan_state='present' AND (color IS NULL OR color='')`, libraryKey)
+	if err != nil {
+		return
+	}
+	type item struct {
+		id     int64
+		rel    string
+		hasCov bool
+	}
+	var items []item
+	for rows.Next() {
+		var it item
+		if rows.Scan(&it.id, &it.rel, &it.hasCov) == nil {
+			items = append(items, it)
+		}
+	}
+	rows.Close()
+	for _, it := range items {
+		var data []byte
+		if it.hasCov {
+			db.QueryRow(`SELECT cover FROM items WHERE id=? AND library_key=?`, it.id, libraryKey).Scan(&data)
+		} else if isImageExt(it.rel) {
+			full := filepath.Join(root, filepath.FromSlash(it.rel))
+			if rel, e := filepath.Rel(root, full); e == nil && !strings.HasPrefix(rel, "..") {
+				data, _ = os.ReadFile(full)
+			}
+		}
+		if len(data) == 0 {
+			continue
+		}
+		if c := dominantColor(data); c != "" {
+			db.Exec(`UPDATE items SET color=? WHERE id=? AND library_key=?`, c, it.id, libraryKey)
+		}
+	}
+}
+
 func backfillGenres(db *sql.DB) {
 	rows, err := db.Query(`SELECT id, meta FROM items WHERE (genre IS NULL OR genre='') AND meta IS NOT NULL AND meta<>''`)
 	if err != nil {
@@ -331,7 +398,7 @@ func backfillGenres(db *sql.DB) {
 	}
 }
 
-func facets(db *sql.DB, libraryKey string) (genres []string, yearMin, yearMax int) {
+func facets(db *sql.DB, libraryKey string) (genres, colors []string, yearMin, yearMax int) {
 	seen := map[string]bool{}
 	rows, err := db.Query(`SELECT DISTINCT genre FROM items WHERE library_key=? AND scan_state='present' AND genre<>''`, libraryKey)
 	if err == nil {
@@ -351,8 +418,20 @@ func facets(db *sql.DB, libraryKey string) (genres []string, yearMin, yearMax in
 		}
 	}
 	sort.Strings(genres)
+
+	crows, err := db.Query(`SELECT DISTINCT color FROM items WHERE library_key=? AND scan_state='present' AND color IS NOT NULL AND color<>''`, libraryKey)
+	if err == nil {
+		defer crows.Close()
+		for crows.Next() {
+			var c string
+			if crows.Scan(&c) == nil && c != "" {
+				colors = append(colors, c)
+			}
+		}
+	}
+
 	db.QueryRow(`SELECT COALESCE(MIN(year),0), COALESCE(MAX(year),0) FROM items WHERE library_key=? AND scan_state='present' AND year>0`, libraryKey).Scan(&yearMin, &yearMax)
-	return genres, yearMin, yearMax
+	return genres, colors, yearMin, yearMax
 }
 
 type LibraryInfo struct {
@@ -487,8 +566,19 @@ func automaticSection(it Item) string {
 		}
 		return "movie"
 	default:
+		if isImageExt(it.RelPath) {
+			return "photos"
+		}
 		return "files"
 	}
+}
+
+func isImageExt(path string) bool {
+	switch strings.ToLower(filepathExt(path)) {
+	case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".heic", ".avif", ".tiff":
+		return true
+	}
+	return false
 }
 
 func listItems(db *sql.DB, libraryKey, kind, q string) ([]Item, error) {
@@ -497,7 +587,7 @@ func listItems(db *sql.DB, libraryKey, kind, q string) ([]Item, error) {
 		       COALESCE(title,''), COALESCE(artist,''), COALESCE(album,''),
 		       COALESCE(year,0), COALESCE(genre,''), COALESCE(duration,0),
 		       COALESCE(season,0), COALESCE(episode,0),
-		       (cover IS NOT NULL), COALESCE(notes,''), COALESCE(rating,0), COALESCE(progress,0)
+		       (cover IS NOT NULL), COALESCE(notes,''), COALESCE(rating,0), COALESCE(progress,0), COALESCE(color,'')
 		FROM items
 		WHERE library_key=? AND scan_state='present' AND (?='' OR kind=?)
 		  AND (?='' OR title LIKE '%'||?||'%' OR artist LIKE '%'||?||'%' OR album LIKE '%'||?||'%')
@@ -513,7 +603,7 @@ func listItems(db *sql.DB, libraryKey, kind, q string) ([]Item, error) {
 		var it Item
 		if err := rows.Scan(&it.ID, &it.Kind, &it.RelPath, &it.Size, &it.ModTime, &it.Section, &it.SectionSource, &it.State, &it.EnrichState,
 			&it.Title, &it.Artist, &it.Album, &it.Year, &it.Genre, &it.Duration,
-			&it.Season, &it.Episode, &it.HasCover, &it.Notes, &it.Rating, &it.Progress); err != nil {
+			&it.Season, &it.Episode, &it.HasCover, &it.Notes, &it.Rating, &it.Progress, &it.Color); err != nil {
 			return nil, err
 		}
 		out = append(out, it)
@@ -582,7 +672,7 @@ func homeShelf(db *sql.DB, libraryKey, where, order string, limit int) ([]Item, 
 		       COALESCE(i.title,''), COALESCE(i.artist,''), COALESCE(i.album,''),
 		       COALESCE(i.year,0), COALESCE(i.genre,''), COALESCE(i.duration,0),
 		       COALESCE(i.season,0), COALESCE(i.episode,0),
-		       (i.cover IS NOT NULL), COALESCE(i.notes,''), COALESCE(i.rating,0), COALESCE(i.progress,0),
+		       (i.cover IS NOT NULL), COALESCE(i.notes,''), COALESCE(i.rating,0), COALESCE(i.progress,0), COALESCE(i.color,''),
 		       COALESCE((
 		         CASE WHEN i.cover IS NOT NULL THEN i.id
 		         WHEN i.album<>'' THEN (SELECT s.id FROM items s
@@ -602,7 +692,7 @@ func homeShelf(db *sql.DB, libraryKey, where, order string, limit int) ([]Item, 
 		var coverID int64
 		if err := rows.Scan(&it.ID, &it.Kind, &it.RelPath, &it.Size, &it.ModTime, &it.Section, &it.SectionSource, &it.State, &it.EnrichState,
 			&it.Title, &it.Artist, &it.Album, &it.Year, &it.Genre, &it.Duration,
-			&it.Season, &it.Episode, &it.HasCover, &it.Notes, &it.Rating, &it.Progress, &coverID); err != nil {
+			&it.Season, &it.Episode, &it.HasCover, &it.Notes, &it.Rating, &it.Progress, &it.Color, &coverID); err != nil {
 			return nil, err
 		}
 		it.CoverID = coverID
@@ -781,10 +871,11 @@ type Filters struct {
 	Cover     string
 	RatingMin int
 	Genre     string
+	Color     string
 }
 
 func (f Filters) empty() bool {
-	return f.Ext == "" && f.YearMin == 0 && f.YearMax == 0 && f.Cover == "" && f.RatingMin == 0 && f.Genre == ""
+	return f.Ext == "" && f.YearMin == 0 && f.YearMax == 0 && f.Cover == "" && f.RatingMin == 0 && f.Genre == "" && f.Color == ""
 }
 
 func (f Filters) match(it Item) bool {
@@ -809,11 +900,14 @@ func (f Filters) match(it Item) bool {
 	if f.Genre != "" && !strings.Contains(strings.ToLower(it.Genre), strings.ToLower(f.Genre)) {
 		return false
 	}
+	if f.Color != "" && it.Color != f.Color {
+		return false
+	}
 	return true
 }
 
 func browseView(db *sql.DB, libraryKey, section, q string, f Filters, page int) (BrowseView, error) {
-	dbKind := map[string]string{"series": "video", "movie": "video", "music": "audio", "audio": "audio", "book": "book"}[section]
+	dbKind := map[string]string{"series": "video", "movie": "video", "music": "audio", "audio": "audio", "book": "book", "photos": "file"}[section]
 	items, err := listItems(db, libraryKey, dbKind, q)
 	if err != nil {
 		return BrowseView{}, err
@@ -829,7 +923,7 @@ func browseView(db *sql.DB, libraryKey, section, q string, f Filters, page int) 
 			continue
 		}
 
-		if it.Album == "" || section == "movie" || section == "files" {
+		if it.Album == "" || section == "movie" || section == "files" || section == "photos" {
 			bv.Loose = append(bv.Loose, it)
 			continue
 		}
@@ -1004,6 +1098,11 @@ func coverOf(db *sql.DB, libraryKey string, id int64) ([]byte, error) {
 
 func setCover(db *sql.DB, libraryKey string, id int64, cover []byte) error {
 	_, err := db.Exec(`UPDATE items SET cover=? WHERE id=? AND library_key=?`, cover, id, libraryKey)
+	if err == nil {
+		if c := dominantColor(cover); c != "" {
+			db.Exec(`UPDATE items SET color=? WHERE id=? AND library_key=?`, c, id, libraryKey)
+		}
+	}
 	return err
 }
 
@@ -1046,7 +1145,7 @@ func setSection(db *sql.DB, libraryKey string, id int64, section string) error {
 		return err
 	}
 	switch section {
-	case "movie", "series", "music", "book", "files":
+	case "movie", "series", "music", "book", "files", "photos":
 	default:
 		return fmt.Errorf("invalid section %q", section)
 	}
