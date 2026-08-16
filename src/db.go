@@ -37,6 +37,8 @@ type Item struct {
 	State         string `json:"state"`
 	EnrichState   string `json:"enrich_state"`
 	Progress      int    `json:"progress"`
+	AudioIdx      int    `json:"audio_idx"`
+	SubIdx        int    `json:"sub_idx"`
 }
 
 type Meta struct {
@@ -82,6 +84,8 @@ CREATE TABLE IF NOT EXISTS items (
   added_at   INTEGER DEFAULT 0,
   last_opened INTEGER DEFAULT 0,
   progress   INTEGER DEFAULT 0,
+  audio_idx  INTEGER DEFAULT 0,
+  sub_idx    INTEGER DEFAULT -1,
   updated_at INTEGER,
   UNIQUE(library_key, rel_path)
 );
@@ -130,6 +134,8 @@ func openDB(path string) (*sql.DB, error) {
 	db.Exec(`ALTER TABLE items ADD COLUMN added_at INTEGER DEFAULT 0`)
 	db.Exec(`ALTER TABLE items ADD COLUMN last_opened INTEGER DEFAULT 0`)
 	db.Exec(`ALTER TABLE items ADD COLUMN progress INTEGER DEFAULT 0`)
+	db.Exec(`ALTER TABLE items ADD COLUMN audio_idx INTEGER DEFAULT 0`)
+	db.Exec(`ALTER TABLE items ADD COLUMN sub_idx INTEGER DEFAULT -1`)
 
 	db.Exec(`UPDATE items SET added_at=COALESCE(updated_at,0) WHERE added_at=0`)
 
@@ -146,6 +152,8 @@ func openDB(path string) (*sql.DB, error) {
 	if _, err := db.Exec(itemIndexes); err != nil {
 		return nil, err
 	}
+
+	backfillGenres(db)
 
 	_, _ = db.Exec(`UPDATE items SET section=CASE
 		WHEN kind='audio' THEN 'music' WHEN kind='book' THEN 'book'
@@ -294,6 +302,33 @@ func markSeen(db *sql.DB, libraryKey, relPath string, runID int64) error {
 func markMissing(db *sql.DB, libraryKey string, runID int64) error {
 	_, err := db.Exec(`UPDATE items SET scan_state='missing' WHERE library_key=? AND last_seen_scan<>?`, libraryKey, runID)
 	return err
+}
+
+func backfillGenres(db *sql.DB) {
+	rows, err := db.Query(`SELECT id, meta FROM items WHERE (genre IS NULL OR genre='') AND meta IS NOT NULL AND meta<>''`)
+	if err != nil {
+		return
+	}
+	type upd struct {
+		id    int64
+		genre string
+	}
+	var updates []upd
+	for rows.Next() {
+		var id int64
+		var raw string
+		if rows.Scan(&id, &raw) != nil {
+			continue
+		}
+		var m Meta
+		if json.Unmarshal([]byte(raw), &m) == nil && len(m.Genres) > 0 {
+			updates = append(updates, upd{id, strings.Join(m.Genres, ", ")})
+		}
+	}
+	rows.Close()
+	for _, u := range updates {
+		db.Exec(`UPDATE items SET genre=? WHERE id=? AND (genre IS NULL OR genre='')`, u.genre, u.id)
+	}
 }
 
 func facets(db *sql.DB, libraryKey string) (genres []string, yearMin, yearMax int) {
@@ -536,6 +571,11 @@ func setProgress(db *sql.DB, libraryKey string, id int64, secs int) error {
 	return err
 }
 
+func setTracks(db *sql.DB, libraryKey string, id int64, audioIdx, subIdx int) error {
+	_, err := db.Exec(`UPDATE items SET audio_idx=?, sub_idx=? WHERE id=? AND library_key=?`, audioIdx, subIdx, id, libraryKey)
+	return err
+}
+
 func homeShelf(db *sql.DB, libraryKey, where, order string, limit int) ([]Item, error) {
 	rows, err := db.Query(`
 		SELECT i.id, i.kind, i.rel_path, COALESCE(i.size,0), COALESCE(i.modtime,0), i.section, i.section_source, i.scan_state, i.enrich_state,
@@ -582,11 +622,13 @@ func getItem(db *sql.DB, libraryKey string, id int64) (Item, error) {
 		       COALESCE(title,''), COALESCE(artist,''), COALESCE(album,''),
 		       COALESCE(year,0), COALESCE(genre,''), COALESCE(duration,0),
 		       COALESCE(season,0), COALESCE(episode,0),
-		       (cover IS NOT NULL), COALESCE(notes,''), COALESCE(rating,0), COALESCE(progress,0), meta, imdb_id
+		       (cover IS NOT NULL), COALESCE(notes,''), COALESCE(rating,0), COALESCE(progress,0),
+		       COALESCE(audio_idx,0), COALESCE(sub_idx,-1), meta, imdb_id
 		FROM items WHERE id=? AND library_key=?`, id, libraryKey).Scan(
 		&it.ID, &it.Kind, &it.RelPath, &it.Size, &it.ModTime, &it.Section, &it.SectionSource, &it.State, &it.EnrichState,
 		&it.Title, &it.Artist, &it.Album, &it.Year, &it.Genre, &it.Duration,
-		&it.Season, &it.Episode, &it.HasCover, &it.Notes, &it.Rating, &it.Progress, &metaJSON, &imdbID)
+		&it.Season, &it.Episode, &it.HasCover, &it.Notes, &it.Rating, &it.Progress,
+		&it.AudioIdx, &it.SubIdx, &metaJSON, &imdbID)
 	if err != nil {
 		return it, err
 	}
@@ -621,6 +663,13 @@ func setMeta(db *sql.DB, libraryKey string, id int64, m Meta, imdbID string) err
 			db.Exec(`UPDATE items SET year=? WHERE library_key=? AND kind=? AND album=? AND (year IS NULL OR year=0)`, y, libraryKey, prev.Kind, prev.Album)
 		} else {
 			db.Exec(`UPDATE items SET year=? WHERE id=? AND library_key=? AND (year IS NULL OR year=0)`, y, id, libraryKey)
+		}
+	}
+	if g := strings.Join(m.Genres, ", "); g != "" && prevErr == nil {
+		if prev.Album != "" {
+			db.Exec(`UPDATE items SET genre=? WHERE library_key=? AND kind=? AND album=? AND (genre IS NULL OR genre='')`, g, libraryKey, prev.Kind, prev.Album)
+		} else {
+			db.Exec(`UPDATE items SET genre=? WHERE id=? AND library_key=? AND (genre IS NULL OR genre='')`, g, id, libraryKey)
 		}
 	}
 	return nil

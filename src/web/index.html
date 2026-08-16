@@ -431,6 +431,7 @@
           <h1 x-text="it.title"></h1>
           <div class="chips">
             <span class="chip" x-show="it.year"><span x-html="svg('clapper')"></span> <span x-text="it.year"></span></span>
+            <span class="chip" x-show="it.size"><span x-html="svg('hdd')"></span> <span x-text="fmtSize(it.size)"></span></span>
             <span class="chip" x-show="it.meta && it.meta.runtime"><span x-html="svg('clock')"></span> <span x-text="it.meta && it.meta.runtime"></span></span>
             <span class="chip rating" x-show="it.meta && it.meta.imdb_rating"><span x-html="svg('star')"></span> <span x-text="it.meta && it.meta.imdb_rating"></span></span>
             <template x-for="c in techChips(it)" :key="c.v">
@@ -448,7 +449,12 @@
             <button class="vplayer-close" @click="stopVideo()" title="Cerrar">&times;</button>
             <video x-ref="vplayer" class="vplayer-video" autoplay @mousemove="playerPoke()"
                    @click="togglePlay()" @dblclick="toggleFullscreen()"
-                   @play="playing=true" @pause="playing=false" @ended="onEnded()"></video>
+                   @play="playing=true; videoLoading=false" @pause="playing=false"
+                   @waiting="videoLoading=true" @playing="videoLoading=false" @ended="onEnded()"></video>
+            <div class="vplayer-loading" x-show="videoLoading" x-transition.opacity>
+              <span class="vspinner"></span>
+              <span x-text="t('preparing')"></span>
+            </div>
             <!-- subtitles are parsed from VTT and painted here (native <track> is
                  unreliable over a piped stream); works for mkv, mp4 and fullscreen -->
             <div class="vplayer-subs" :class="{'sub-boxed': subCfg.boxed}"

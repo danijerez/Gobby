@@ -16,7 +16,7 @@ import (
 	"github.com/mdp/qrterminal/v3"
 )
 
-var version = "0.2.1"
+var version = "0.3.0"
 
 var (
 	flagPath    = flag.String("p", envOr("GOBBY_PATH", ""), "carpeta a escanear (por defecto: junto al binario)")
@@ -66,6 +66,8 @@ func main() {
 		libraryKey = rootKey(root)
 	}
 	lb := &lib{root: root, key: libraryKey}
+
+	go warmFFmpeg(dataDir)
 
 	go func() {
 		if _, err := scan(db, root, libraryKey); err != nil {

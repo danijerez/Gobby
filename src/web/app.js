@@ -90,7 +90,7 @@ function gobby() {
         fCover: 'Carátula', fCoverAll: 'Todas', fCoverWith: 'Con carátula', fCoverWithout: 'Sin carátula',
         fRating: 'Valoración mín.', fAny: 'Cualquiera', fGenre: 'Género', clear: 'Limpiar',
         openExternal: 'Copiar enlace', openWith: 'Abrir con…',
-        copied: 'Copiado', openStream: 'Abrir', playHere: 'Reproducir aquí', subsOff: 'Sin subtítulos',
+        copied: 'Copiado', openStream: 'Abrir', playHere: 'Reproducir aquí', preparing: 'Preparando…', subsOff: 'Sin subtítulos',
         subStyle: 'Subtítulos', subSize: 'Tamaño', subColor: 'Color', subBox: 'Fondo', on: 'Sí', off: 'No', playerSettings: 'Audio y subtítulos',
         scanning: 'Escaneando ficheros', source: 'Fuente', local: 'archivo local',
         resolution: 'Resolución', vcodec: 'Vídeo', acodec: 'Audio', channels: 'Canales', languages: 'Idiomas',
@@ -134,7 +134,7 @@ function gobby() {
         fCover: 'Cover', fCoverAll: 'All', fCoverWith: 'With cover', fCoverWithout: 'Without cover',
         fRating: 'Min. rating', fAny: 'Any', fGenre: 'Genre', clear: 'Clear',
         openExternal: 'Copy link', openWith: 'Open with…',
-        copied: 'Copied', openStream: 'Open', playHere: 'Play here', subsOff: 'No subtitles',
+        copied: 'Copied', openStream: 'Open', playHere: 'Play here', preparing: 'Preparing…', subsOff: 'No subtitles',
         subStyle: 'Subtitles', subSize: 'Size', subColor: 'Colour', subBox: 'Box', on: 'On', off: 'Off', playerSettings: 'Audio & subtitles',
         scanning: 'Scanning files', source: 'Source', local: 'local file',
         resolution: 'Resolution', vcodec: 'Video', acodec: 'Audio', channels: 'Channels', languages: 'Languages',
@@ -178,7 +178,7 @@ function gobby() {
         fCover: 'Jaquette', fCoverAll: 'Toutes', fCoverWith: 'Avec jaquette', fCoverWithout: 'Sans jaquette',
         fRating: 'Note min.', fAny: 'Toutes', fGenre: 'Genre', clear: 'Effacer',
         openExternal: 'Copier le lien', openWith: 'Ouvrir avec…',
-        copied: 'Copié', openStream: 'Ouvrir', playHere: 'Lire ici', subsOff: 'Sans sous-titres',
+        copied: 'Copié', openStream: 'Ouvrir', playHere: 'Lire ici', preparing: 'Préparation…', subsOff: 'Sans sous-titres',
         subStyle: 'Sous-titres', subSize: 'Taille', subColor: 'Couleur', subBox: 'Fond', on: 'Oui', off: 'Non', playerSettings: 'Audio et sous-titres',
         scanning: 'Analyse des fichiers', source: 'Source', local: 'fichier local',
         resolution: 'Résolution', vcodec: 'Vidéo', acodec: 'Audio', channels: 'Canaux', languages: 'Langues',
@@ -222,7 +222,7 @@ function gobby() {
         fCover: 'Cover', fCoverAll: 'Alle', fCoverWith: 'Mit Cover', fCoverWithout: 'Ohne Cover',
         fRating: 'Mind. Bewertung', fAny: 'Beliebig', fGenre: 'Genre', clear: 'Löschen',
         openExternal: 'Link kopieren', openWith: 'Öffnen mit…',
-        copied: 'Kopiert', openStream: 'Öffnen', playHere: 'Hier abspielen', subsOff: 'Keine Untertitel',
+        copied: 'Kopiert', openStream: 'Öffnen', playHere: 'Hier abspielen', preparing: 'Wird vorbereitet…', subsOff: 'Keine Untertitel',
         subStyle: 'Untertitel', subSize: 'Größe', subColor: 'Farbe', subBox: 'Box', on: 'An', off: 'Aus', playerSettings: 'Audio & Untertitel',
         scanning: 'Dateien werden gescannt', source: 'Quelle', local: 'lokale Datei',
         resolution: 'Auflösung', vcodec: 'Video', acodec: 'Audio', channels: 'Kanäle', languages: 'Sprachen',
@@ -266,7 +266,7 @@ function gobby() {
         fCover: 'Copertina', fCoverAll: 'Tutte', fCoverWith: 'Con copertina', fCoverWithout: 'Senza copertina',
         fRating: 'Valutazione min.', fAny: 'Qualsiasi', fGenre: 'Genere', clear: 'Pulisci',
         openExternal: 'Copia link', openWith: 'Apri con…',
-        copied: 'Copiato', openStream: 'Apri', playHere: 'Riproduci qui', subsOff: 'Senza sottotitoli',
+        copied: 'Copiato', openStream: 'Apri', playHere: 'Riproduci qui', preparing: 'Preparazione…', subsOff: 'Senza sottotitoli',
         subStyle: 'Sottotitoli', subSize: 'Dimensione', subColor: 'Colore', subBox: 'Sfondo', on: 'Sì', off: 'No', playerSettings: 'Audio e sottotitoli',
         scanning: 'Scansione dei file', source: 'Fonte', local: 'file locale',
         resolution: 'Risoluzione', vcodec: 'Video', acodec: 'Audio', channels: 'Canali', languages: 'Lingue',
@@ -310,7 +310,7 @@ function gobby() {
         fCover: 'Capa', fCoverAll: 'Todas', fCoverWith: 'Com capa', fCoverWithout: 'Sem capa',
         fRating: 'Avaliação mín.', fAny: 'Qualquer', fGenre: 'Género', clear: 'Limpar',
         openExternal: 'Copiar ligação', openWith: 'Abrir com…',
-        copied: 'Copiado', openStream: 'Abrir', playHere: 'Reproduzir aqui', subsOff: 'Sem legendas',
+        copied: 'Copiado', openStream: 'Abrir', playHere: 'Reproduzir aqui', preparing: 'A preparar…', subsOff: 'Sem legendas',
         subStyle: 'Legendas', subSize: 'Tamanho', subColor: 'Cor', subBox: 'Fundo', on: 'Sim', off: 'Não', playerSettings: 'Áudio e legendas',
         scanning: 'A analisar ficheiros', source: 'Fonte', local: 'ficheiro local',
         resolution: 'Resolução', vcodec: 'Vídeo', acodec: 'Áudio', channels: 'Canais', languages: 'Idiomas',
@@ -624,6 +624,7 @@ function gobby() {
       const p = {
         search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
         mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/>',
+        hdd: '<rect x="2" y="7" width="20" height="10" rx="2"/><path d="M6 12h.01M10 12h6"/>',
         sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>',
         moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
         palette: '<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1-.3-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-4.9-4.5-9-10-9Z"/>',
@@ -1219,6 +1220,7 @@ function gobby() {
     // can't seek by byte-range — so we drive playback + seek ourselves.
     needsRemux(item) { return ['mkv', 'avi'].includes(this.ext(item)); },
     videoOpen: false,
+    videoLoading: false,
     videoRemux: false, // mkv/avi: seek via ?t= (fragmented mp4 = no native seek)
     videoDur: 0,       // total seconds (server for remux, element for native)
     seekVal: 0,        // current position in seconds
@@ -1249,6 +1251,7 @@ function gobby() {
     async playHere(item) {
       this.stopVideo();
       this.videoOpen = true;
+      this.videoLoading = true;
       this.videoRemux = this.needsRemux(item);
       this.videoDur = 0;
       this.seekVal = 0;
@@ -1291,6 +1294,14 @@ function gobby() {
         if (this.videoRemux) this.videoDur = Math.floor(d.seconds || 0);
         this.audioTracks = d.audio || [];
         this.subTracks = d.subs || [];
+        // restore the audio/subtitle the user had on this item last time
+        const savedA = item.audio_idx || 0, savedS = item.sub_idx;
+        if (savedA > 0 && this.audioTracks.some(a => a.idx === savedA)) {
+          this.setAudio(savedA);
+        }
+        if (typeof savedS === 'number' && savedS >= 0 && this.subTracks.some(s => s.idx === savedS)) {
+          this.setSub(savedS);
+        }
       } catch (e) {}
     },
     // (re)point the <video> at the stream from `at` seconds with the current audio
@@ -1336,6 +1347,14 @@ function gobby() {
       this.audioSel = idx;
       if (this.videoRemux) this._loadVideo(this.seekVal);
       this.playerPoke();
+      this._saveTracks();
+    },
+    _saveTracks() {
+      const item = this._playItem;
+      if (!item) return;
+      item.audio_idx = this.audioSel;
+      item.sub_idx = this.subSel;
+      fetch(`/api/item/${item.id}/opened?a=${this.audioSel}&s=${this.subSel}`, { method: 'POST' }).catch(() => {});
     },
     subURL(idx) { return `/api/item/${this._playItem?.id}/sub?track=${idx}`; },
     // Fetch the chosen subtitle, parse the VTT into cues, and paint them as an
@@ -1346,6 +1365,7 @@ function gobby() {
       this.subText = '';
       this._cues = [];
       this.playerPoke();
+      this._saveTracks();
       if (idx < 0) return;
       // A newer selection must win even if an older fetch resolves later — guard with
       // a monotonically increasing token (that's the "changed several times and it
@@ -1464,6 +1484,7 @@ function gobby() {
     },
     // stop and unload the player (leaving the detail, switching item, close button).
     stopVideo() {
+      this.videoLoading = false;
       // exit fullscreen first, else the browser stays FS on the hidden player and freezes clicks
       if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) {} }
       const v = this.$refs && this.$refs.vplayer;

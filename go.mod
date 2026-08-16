@@ -3,9 +3,11 @@ module github.com/danijerez/Gobby
 go 1.26
 
 require (
+	codeberg.org/gruf/go-ffmpreg v0.6.22
 	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
 	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/modelcontextprotocol/go-sdk v1.7.0
+	github.com/tetratelabs/wazero v1.12.0
 	modernc.org/sqlite v1.56.0
 	rsc.io/qr v0.2.0
 )

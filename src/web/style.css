@@ -723,6 +723,17 @@ main, .watch { padding: 8px 22px; }
 .vplayer:fullscreen .vplayer-bar { padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
 .vplayer:fullscreen .vplayer-close { top: calc(8px + env(safe-area-inset-top, 0px)); }
 .vplayer-video { width: 100%; max-height: 70vh; display: block; }
+.vplayer-loading {
+  position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
+  background: rgba(0,0,0,.6); color: #fff; font-size: 14px;
+}
+.vspinner {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.25); border-top-color: #fff;
+  animation: vspin .8s linear infinite;
+}
+@keyframes vspin { to { transform: rotate(360deg); } }
 /* fullscreen: fill the screen, keep aspect, and let the absolutely-positioned bar
    and subtitle overlay stay anchored to the player box (no flex, which shifted them) */
 .vplayer:fullscreen .vplayer-video { width: 100%; height: 100vh; max-height: 100vh; object-fit: contain; }

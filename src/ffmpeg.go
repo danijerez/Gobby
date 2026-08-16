@@ -8,14 +8,10 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
-	"sync"
-	"time"
 )
 
 var remuxExts = map[string]bool{".mkv": true, ".avi": true}
@@ -29,21 +25,17 @@ var mp4VideoOK = map[string]bool{"h264": true, "hevc": true, "av1": true}
 var mp4AudioOK = map[string]bool{"aac": true, "mp3": true}
 
 func streamSubtitle(ctx context.Context, w http.ResponseWriter, binDir, path string, subIdx int) error {
-	bin, err := ffmpegPath(binDir)
-	if err != nil {
-		return err
-	}
-	out, err := exec.CommandContext(ctx, bin,
-		"-i", path,
-		"-map", "0:s:"+strconv.Itoa(subIdx),
+	var buf bytes.Buffer
+	err := runFF(ctx, binDir, path, []string{
+		"-map", "0:s:" + strconv.Itoa(subIdx),
 		"-f", "webvtt",
 		"pipe:1",
-	).Output()
+	}, &buf, nil)
 	if err != nil {
 		return fmt.Errorf("no se pudo extraer subtítulo %d: %w", subIdx, err)
 	}
 	w.Header().Set("Content-Type", "text/vtt; charset=utf-8")
-	w.Write(out)
+	w.Write(buf.Bytes())
 	return nil
 }
 
@@ -61,10 +53,6 @@ func (c *countingWriter) Write(p []byte) (int, error) {
 }
 
 func streamRemux(ctx context.Context, w http.ResponseWriter, binDir, path string, startSec float64, audioIdx int) error {
-	bin, err := ffmpegPath(binDir)
-	if err != nil {
-		return err
-	}
 	vcodec, acodec, _ := probeMedia(ctx, binDir, path)
 
 	vArg := "mpeg4"
@@ -77,36 +65,29 @@ func streamRemux(ctx context.Context, w http.ResponseWriter, binDir, path string
 		aArg = "copy"
 	}
 
-	var args []string
+	var pre []string
 	if startSec > 0 {
-
-		args = append(args, "-ss", strconv.FormatFloat(startSec, 'f', 3, 64))
+		pre = append(pre, "-ss", strconv.FormatFloat(startSec, 'f', 3, 64))
 	}
-	args = append(args, "-i", path,
+	args := append(pre,
 		"-map", "0:v:0",
 		"-map", "0:a:"+strconv.Itoa(audioIdx),
 		"-c:v", vArg)
 	if vArg == "mpeg4" {
-
 		args = append(args, "-q:v", "4")
 	}
 	args = append(args,
 		"-c:a", aArg,
 		"-sn",
-
 		"-movflags", "frag_keyframe+empty_moov+delay_moov",
 		"-f", "mp4",
 		"pipe:1",
 	)
 
 	cw := &countingWriter{w: w}
-	cmd := exec.CommandContext(ctx, bin, args...)
-	cmd.Stdout = cw
 	var errTail ringBuffer
-	cmd.Stderr = &errTail
 	w.Header().Set("Content-Type", "video/mp4")
-	if err := cmd.Run(); err != nil {
-
+	if err := runFF(ctx, binDir, path, args, cw, &errTail); err != nil {
 		if cw.n > 0 {
 			return errStreamStarted
 		}
@@ -126,13 +107,7 @@ var (
 )
 
 func probeMedia(ctx context.Context, binDir, path string) (video, audio string, dur float64) {
-	bin, err := ffmpegPath(binDir)
-	if err != nil {
-		return "", "", 0
-	}
-
-	out, _ := exec.CommandContext(ctx, bin, "-i", path).CombinedOutput()
-	s := string(out)
+	s, _ := ffmpegInfo(ctx, binDir, path)
 	if m := reProbeVideo.FindStringSubmatch(s); m != nil {
 		video = m[1]
 	}
@@ -165,12 +140,10 @@ func probeAll(ctx context.Context, binDir, path string) (dur float64, t Tracks) 
 }
 
 func ffmpegInfo(ctx context.Context, binDir, path string) (string, error) {
-	bin, err := ffmpegPath(binDir)
-	if err != nil {
-		return "", err
-	}
-	out, _ := exec.CommandContext(ctx, bin, "-i", path).CombinedOutput()
-	return string(out), nil
+	var buf bytes.Buffer
+	// ffmpeg with only -i prints stream info to stderr then exits non-zero; that's fine.
+	_ = runFF(ctx, binDir, path, nil, &buf, &buf)
+	return buf.String(), nil
 }
 
 func parseDuration(s string) float64 {
@@ -217,53 +190,3 @@ func (b *ringBuffer) String() string {
 	return s
 }
 
-var ffmpegDownloadMu sync.Mutex
-
-func ffmpegName() string {
-	if runtime.GOOS == "windows" {
-		return "ffmpeg.exe"
-	}
-	return "ffmpeg"
-}
-
-func ffmpegPath(binDir string) (string, error) {
-	name := ffmpegName()
-	for _, dir := range []string{binDir, binaryDir()} {
-		if local := filepath.Join(dir, name); fileExists(local) {
-			return local, nil
-		}
-	}
-	if p, err := exec.LookPath("ffmpeg"); err == nil {
-		return p, nil
-	}
-	return downloadFFmpeg()
-}
-
-func downloadFFmpeg() (string, error) {
-	ffmpegDownloadMu.Lock()
-	defer ffmpegDownloadMu.Unlock()
-
-	name := ffmpegName()
-	dest := filepath.Join(binaryDir(), name)
-	if fileExists(dest) {
-		return dest, nil
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-	rel, err := fetchLatestRelease(ctx)
-	if err != nil {
-		return "", fmt.Errorf("ffmpeg no encontrado y no se pudo consultar la release: %w — coloca %s junto a Gobby o instálalo en el PATH", err, name)
-	}
-	url := rel.findAsset("ffmpeg-")
-	if url == "" {
-		return "", fmt.Errorf("ffmpeg no encontrado — la release %s no trae binario para %s; coloca %s junto a Gobby o instálalo en el PATH", rel.Tag, assetSuffix(), name)
-	}
-	if err := downloadFile(url, dest); err != nil {
-		return "", fmt.Errorf("no se pudo descargar ffmpeg: %w", err)
-	}
-	if runtime.GOOS != "windows" {
-		_ = os.Chmod(dest, 0o755)
-	}
-	return dest, nil
-}

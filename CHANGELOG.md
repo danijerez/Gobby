@@ -3,6 +3,25 @@
 All notable changes to Gobby are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.3.0]
+
+### Added
+- **ffmpeg embedded** in the release binary as WebAssembly
+  ([go-ffmpreg](https://codeberg.org/gruf/go-ffmpreg)) — one self-contained file,
+  nothing to download. A native ffmpeg beside Gobby (or on PATH) is still used
+  when present (faster, no startup cost, no transcode limits).
+- Player shows a spinner ("Preparing…") while a stream starts; the wasm runtime
+  is warmed up in the background at launch so the first playback isn't slow.
+- **Continue-watching remembers the audio track and subtitle** you had per item.
+- File-size chip on the item detail.
+- Cinemeta genres now fill the `genre` column too, so the genre filter works.
+
+### Changed
+- **Licence:** the release binary is now **GPLv3** (it embeds GPL ffmpeg). Gobby's
+  own code stays MIT; build without `-tags embedffmpeg` for a non-GPL binary that
+  downloads a slim LGPL ffmpeg on demand.
+- `publish.sh` embeds ffmpeg by default.
+
 ## [0.2.1]
 
 ### Added

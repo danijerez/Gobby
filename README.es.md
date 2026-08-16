@@ -11,8 +11,9 @@
     <img alt="Alpine.js" src="https://img.shields.io/badge/Alpine.js-8BC0D0?logo=alpinedotjs&logoColor=black">
     <img alt="MCP" src="https://img.shields.io/badge/MCP-server-6E56CF">
     <img alt="Cloudflare" src="https://img.shields.io/badge/Cloudflare-Tunnel-F38020?logo=cloudflare&logoColor=white">
-    <img alt="version" src="https://img.shields.io/badge/version-0.2.1-2ea44f">
-    <img alt="license" src="https://img.shields.io/badge/license-MIT-blue">
+    <img alt="version" src="https://img.shields.io/badge/version-0.3.0-2ea44f">
+    <img alt="license" src="https://img.shields.io/badge/code-MIT-blue">
+    <img alt="release binary" src="https://img.shields.io/badge/release%20binary-GPLv3-orange">
   </p>
 
   <p><a href="README.md">English</a> · <strong>Español</strong></p>
@@ -48,26 +49,25 @@ Coge el binario para tu plataforma de la página de [Releases](https://github.co
 y déjalo en la carpeta donde quieras que viva. Eso es todo — un fichero, sin instalación.
 (Mira el [CHANGELOG](CHANGELOG.md) para ver las novedades.)
 
-Para reproducir `.mkv`/`.avi` en el navegador Gobby necesita un **ffmpeg** slim. La
-primera vez que hace falta, Gobby lo descarga automáticamente de su propia release
-a la carpeta del binario (igual que hace con cloudflared) — nada que instalar. Si
-prefieres poner el tuyo, deja un `ffmpeg` junto al binario de Gobby o ten uno en el
-`PATH` y Gobby usará ese. Los demás formatos se descargan y se transmiten a la TV
-igual sin ffmpeg — solo que no se reproducen dentro del navegador.
+**ffmpeg va dentro.** Reproducir mkv/avi necesita ffmpeg, y el binario de release
+lo lleva **embebido como WebAssembly** ([go-ffmpreg](https://codeberg.org/gruf/go-ffmpreg)) —
+un solo fichero de verdad, nada que descargar. ¿Lo quieres más rápido? Deja un
+`ffmpeg` nativo junto a Gobby (o ten uno en el `PATH`) y Gobby usará ese en vez
+del embebido — sin coste de arranque ni límites de transcodificación.
 
 ## Compilar 🔨
 
-Necesita **Go 1.26+**. SQLite en Go puro (modernc) significa sin CGO y sin toolchain de C.
+Necesita **Go 1.26+**. SQLite en Go puro (modernc) y un ffmpeg WASM significan sin
+CGO y sin toolchain de C — compilas las tres plataformas desde una sola máquina.
 
 ```sh
-go build -o gobby ./src         # un binario para tu plataforma actual
-./build/publish.sh              # compila cruzado Windows + Linux + macOS en bin/
-./build/publish.sh v0.2.0       # ...marcando una versión explícita
+go build -tags embedffmpeg -o gobby ./src   # tu plataforma, ffmpeg embebido
+./build/publish.sh                          # compila cruzado Win + Linux + macOS en bin/
+./build/publish.sh v0.3.0                   # ...marcando una versión explícita
 ```
 
-El **ffmpeg** slim se compila aparte (solo si quieres regenerarlo — las releases ya
-traen uno). Necesita Docker y produce un binario estático de ~20 MB con todos los
-demuxers/decoders pero solo los encoders mp4/aac que Gobby usa de verdad:
+Sin `-tags embedffmpeg` obtienes el build ligero que descarga un ffmpeg slim bajo
+demanda (LGPL, binario más pequeño). Ese ffmpeg slim se compila aparte con Docker:
 
 ```sh
 ./build/ffmpeg-slim/build.sh    # deja ffmpeg.exe junto al script
@@ -174,12 +174,16 @@ claude mcp add --transport http gobby http://localhost:8420/mcp
 
 ## Licencia y créditos 📜
 
-El código propio de Gobby es **MIT** — ver [LICENSE](LICENSE). Las bibliotecas
-incluidas y el binario de ffmpeg mantienen sus propias licencias:
+**El código propio de Gobby es MIT** — ver [LICENSE](LICENSE). Pero el **binario de
+release lleva ffmpeg embebido** ([go-ffmpreg](https://codeberg.org/gruf/go-ffmpreg),
+GPLv3), así que **el binario distribuido en conjunto es GPLv3**. Compila sin
+`-tags embedffmpeg` (el ffmpeg slim, descargado bajo demanda, es LGPL) si necesitas
+un binario no-GPL. Componentes incluidos y sus licencias:
 
 | Componente | Licencia | Notas |
 | --- | --- | --- |
-| [ffmpeg](https://ffmpeg.org) (build slim) | **LGPL-2.1-or-later** | Compilado **sin** `--enable-gpl` / `--enable-nonfree`. Fuente: ffmpeg.org; configuración exacta del build en [build/ffmpeg-slim/](build/ffmpeg-slim/). Se distribuye como un binario separado y sin modificar que puedes reemplazar. |
+| [go-ffmpreg](https://codeberg.org/gruf/go-ffmpreg) (ffmpeg WASM embebido) | **GPLv3** | ffmpeg compilado a WebAssembly, incluido en el binario de release → hace GPLv3 el binario entero. |
+| [ffmpeg](https://ffmpeg.org) (build slim, builds sin embed) | **LGPL-2.1-or-later** | Compilado **sin** `--enable-gpl` / `--enable-nonfree`. Config en [build/ffmpeg-slim/](build/ffmpeg-slim/). Binario separado y reemplazable — usado cuando no se embebe. |
 | Go std + `golang.org/x/*` | BSD-3-Clause | |
 | [modernc.org/sqlite](https://pkg.go.dev/modernc.org/sqlite) (+ libc, memory, …) | BSD-3-Clause | SQLite en Go puro |
 | [dhowden/tag](https://github.com/dhowden/tag) | BSD-2-Clause | metadatos de audio |

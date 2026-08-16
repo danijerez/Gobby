@@ -266,9 +266,18 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 
 	mux.HandleFunc("POST /api/item/{id}/opened", func(w http.ResponseWriter, r *http.Request) {
 		id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
-		if t := r.URL.Query().Get("t"); t != "" {
+		q := r.URL.Query()
+		if t := q.Get("t"); t != "" {
 			secs, _ := strconv.Atoi(t)
 			_ = setProgress(db, lb.Key(), id, secs)
+		}
+		if a, s := q.Get("a"), q.Get("s"); a != "" || s != "" {
+			ai, _ := strconv.Atoi(a)
+			si := -1
+			if s != "" {
+				si, _ = strconv.Atoi(s)
+			}
+			_ = setTracks(db, lb.Key(), id, ai, si)
 		}
 		writeJSON(w, map[string]string{"status": "ok"}, markOpened(db, lb.Key(), id))
 	})
