@@ -3,6 +3,40 @@
 All notable changes to Gobby are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.5.0]
+
+### Added
+- **Gobby can act, not just answer.** The chat gained action tools: play/open an
+  item, list a series' episodes to pick a specific one, and add to the watchlist.
+  Asking "play the first episode of X" now actually starts it in the player.
+- **Conversation memory** — the chat keeps context across turns (server-side
+  session), survives a page refresh, and shows which tools Gobby used per reply.
+- **Result cards** — searches in the chat show clickable poster cards that play
+  on tap. Starter suggestions appear in an empty chat.
+- **Thinking toggle & reasoning** — turn a model's "thinking" off per provider for
+  much faster replies, or read its reasoning in a collapsible note. A pulsing
+  bubble shows when Gobby is thinking with the chat closed. Optional voice replies.
+- **Grid zoom** — resize the thumbnails in any section with a slider (or +/−); the
+  grid reflows to fit and the items do a little wobble. Works on mobile too.
+- **Infinite scroll** replaces pagination — items load as you scroll.
+- **Photo zoom** — pinch-free zoom in the lightbox (wheel, buttons, 30–600%).
+- **Auto-update restarts Gobby** — applying an update relaunches the server and the
+  page reconnects on its own; the leftover `.old` binary is cleaned on next start.
+
+### Fixed
+- **Chat tool-calling hardened across providers**: assistant messages with tool
+  calls send `content: null`; tool `arguments` are tolerated as string or object;
+  Gemini's `thought_signature`/reasoning round-trips so multi-turn tools work;
+  tool schemas use correct types (fixes Groq's "expected string, got number").
+- **Series covers** — episodes without their own cover fall back to the series
+  poster everywhere (grid, detail, chat), not just the first episode.
+- **Episode detection** — files under `Season NN/` named `03.mkv`, `Episode 03`,
+  `E03`, etc. now parse the episode number; a one-time backfill fixes existing
+  libraries without a re-scan.
+- **Back navigation** — going back from an episode returns to the season list, not
+  out of the series (a duplicate init was firing history twice).
+- Rate-limit (HTTP 429) shows a friendly "provider busy, retry" message.
+
 ## [0.4.0]
 
 ### Added

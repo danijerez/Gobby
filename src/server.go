@@ -758,7 +758,19 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 			writeJSON(w, nil, err)
 			return
 		}
-		writeJSON(w, map[string]string{"status": "ok", "note": "actualizado — reinicia Gobby para usar la nueva versión"}, nil)
+		writeJSON(w, map[string]string{"status": "ok", "note": "actualizado — Gobby se reinicia"}, nil)
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+		go func() {
+			time.Sleep(700 * time.Millisecond)
+			if err := relaunchSelf(); err != nil {
+				slog.Warn("relaunch failed", "err", err)
+				return
+			}
+			time.Sleep(300 * time.Millisecond)
+			os.Exit(0)
+		}()
 	})
 
 	mux.HandleFunc("GET /api/qr", func(w http.ResponseWriter, r *http.Request) {
@@ -861,19 +873,36 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		}
 		var in struct {
 			Message string `json:"message"`
+			Session string `json:"session"`
+			Resume  bool   `json:"resume"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&in); err != nil || strings.TrimSpace(in.Message) == "" {
 			http.Error(w, "mensaje vacío", 400)
 			return
 		}
-		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
+		if in.Session == "" {
+			in.Session = "default"
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Minute)
 		defer cancel()
-		reply, err := runChat(ctx, db, lb.Key(), uiBase, in.Message)
+		res, err := runChat(ctx, db, lb.Key(), uiBase, in.Session, in.Message, in.Resume)
 		if err != nil {
-			writeJSON(w, map[string]string{"reply": "Gobby no pudo pensar: " + err.Error()}, nil)
+			writeJSON(w, map[string]any{"reply": "Gobby no pudo pensar: " + err.Error()}, nil)
 			return
 		}
-		writeJSON(w, map[string]string{"reply": reply}, nil)
+		writeJSON(w, res, nil)
+	})
+
+	mux.HandleFunc("POST /api/chat/reset", func(w http.ResponseWriter, r *http.Request) {
+		var in struct {
+			Session string `json:"session"`
+		}
+		json.NewDecoder(r.Body).Decode(&in)
+		if in.Session == "" {
+			in.Session = "default"
+		}
+		resetSession(in.Session)
+		w.WriteHeader(204)
 	})
 
 	ui, err := fs.Sub(webFS, "web")
@@ -931,7 +960,12 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 				}
 				go func() { <-ctx.Done(); tlsSrv.Close() }()
 				go func() {
-					if err := tlsSrv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
+					ln, err := listenRetry(tlsAddr, 8*time.Second)
+					if err != nil {
+						slog.Warn("https listener", "err", err)
+						return
+					}
+					if err := tlsSrv.ServeTLS(ln, "", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
 						slog.Warn("https listener", "err", err)
 					}
 				}()
@@ -939,10 +973,28 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 		}
 	}
 
-	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	ln, err := listenRetry(addr, 8*time.Second)
+	if err != nil {
+		return err
+	}
+	if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
 	return nil
+}
+
+func listenRetry(addr string, within time.Duration) (net.Listener, error) {
+	deadline := time.Now().Add(within)
+	for {
+		ln, err := net.Listen("tcp", addr)
+		if err == nil {
+			return ln, nil
+		}
+		if time.Now().After(deadline) {
+			return nil, err
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
 }
 
 func writeJSON(w http.ResponseWriter, payload any, err error) {

@@ -11,7 +11,7 @@
     <img alt="Alpine.js" src="https://img.shields.io/badge/Alpine.js-8BC0D0?logo=alpinedotjs&logoColor=black">
     <img alt="MCP" src="https://img.shields.io/badge/MCP-server-6E56CF">
     <img alt="Cloudflare" src="https://img.shields.io/badge/Cloudflare-Tunnel-F38020?logo=cloudflare&logoColor=white">
-    <img alt="version" src="https://img.shields.io/badge/version-0.4.0-2ea44f">
+    <img alt="version" src="https://img.shields.io/badge/version-0.5.0-2ea44f">
     <img alt="license" src="https://img.shields.io/badge/code-MIT-blue">
     <img alt="release binary" src="https://img.shields.io/badge/release%20binary-GPLv3-orange">
   </p>
@@ -91,12 +91,19 @@ Then open the link Gobby prints, or scan the QR from your phone. Same house, sam
 
 A chat bubble sits in the corner: ask Gobby about your library in plain language
 ("what action films haven't I watched?") — by voice too — and he uses his own
-tools to answer, speaking like a shy house-elf.
+tools to answer, speaking like a shy house-elf. He doesn't just answer: ask him
+to **play** something ("put on the first episode of X") and he finds it and
+starts it in the player, or adds titles to your watchlist. Replies keep context
+across the conversation, show which tools he used, and offer clickable poster
+cards that play on tap.
 
 Point it at any **OpenAI-compatible** endpoint — Ollama, LM Studio, OpenAI,
 Gemini, Groq, or a gateway like LiteLLM / OpenRouter / OmniRoute. Configure it
-right in the bubble's settings: pick a preset, load the model list to test the
-connection, save. You can keep **several providers** and switch with a click.
+right in the bubble's settings: pick a preset, load the model list (which also
+tests the connection — you can't save until it connects), pick a model from a
+searchable list, save. You can keep **several providers** and switch with a
+click, turn a model's slow "thinking" off per provider, and read its reasoning
+in a collapsible note.
 
 API keys are stored per provider but **never leave the machine**: they're
 redacted from every response and excluded from database export. A

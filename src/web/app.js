@@ -17,6 +17,33 @@ function gobby() {
     // { view: 'home' } | { view: 'series', group } | { view: 'item', item }
     stack: [{ view: 'home' }],
 
+    gridZoom: Number(localStorage.getItem('gobby-grid-zoom')) || 150,
+    gridZoomOpen: false,
+    applyGridZoom() {
+      this.gridZoom = Math.max(90, Math.min(320, Math.round(this.gridZoom)));
+      document.documentElement.style.setProperty('--tile', this.gridZoom + 'px');
+      localStorage.setItem('gobby-grid-zoom', String(this.gridZoom));
+    },
+    setGridZoom(v) {
+      const prev = this.gridZoom;
+      this.gridZoom = v;
+      this.applyGridZoom();
+      if (this.gridZoom !== prev) this._wobble();
+    },
+    _wobble() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      requestAnimationFrame(() => {
+        const grid = [...document.querySelectorAll('.grid, .photo-grid')].find(g => g.clientWidth > 0);
+        if (!grid) return;
+        grid.querySelectorAll('.item, .photo').forEach(el => {
+          if (el.animate) el.animate(
+            [{ transform: 'scale(1)' }, { transform: 'scale(1.03)' }, { transform: 'scale(0.985)' }, { transform: 'scale(1)' }],
+            { duration: 320, easing: 'ease' }
+          );
+        });
+      });
+    },
+
     // library info (root path + item count)
     info: { root: '', total: 0 },
 
@@ -86,7 +113,7 @@ function gobby() {
         empty: 'Nada por aquí todavía.', episodes: 'episodios', tracks: 'temas', books: 'libros',
         title: 'Título', notes: 'Notas', rating: 'Valoración', location: 'Ubicación', reveal: 'Abrir carpeta', uploadHere: 'Subir aquí', deleteFile: 'Borrar del disco', deleteConfirm: '¿Borrar «{name}» del disco? No se puede deshacer.', deleteFailed: 'No se pudo borrar.',
         director: 'Dirección', cast: 'Reparto', back: 'Atrás', add: 'Añadir',
-        enrichThemes: 'Buscar carátulas', theme: 'Cambiar tema', fetching: 'Buscando carátulas', sound: 'Sonido', language: 'Idioma',
+        enrichThemes: 'Buscar carátulas', theme: 'Cambiar tema', gridZoom: 'Tamaño de miniaturas', fetching: 'Buscando carátulas', sound: 'Sonido', language: 'Idioma',
         forceAll: 'Rebuscar todo (sobrescribe)', stop: 'Parar',
         identify: 'ID (IMDb, ej. tt1375666)', update: 'Actualizar', updating: 'Actualizando…', editId: 'Editar ID', openRef: 'Ver referencia',
         section: 'Sección', autoSection: 'Automática', movieSection: 'Películas', seriesSection: 'Series', musicSection: 'Música', bookSection: 'Libros', filesSection: 'Ficheros',
@@ -95,7 +122,7 @@ function gobby() {
         fCover: 'Carátula', fColor: 'Color', fCoverAll: 'Todas', fCoverWith: 'Con carátula', fCoverWithout: 'Sin carátula',
         fRating: 'Valoración mín.', fAny: 'Cualquiera', fGenre: 'Género', clear: 'Limpiar',
         openExternal: 'Copiar enlace', openWith: 'Abrir con…',
-        copied: 'Copiado', openStream: 'Abrir', playHere: 'Reproducir aquí', preparing: 'Preparando…', chatTitle: 'Habla con Gobby', chatClear: 'Nueva conversación', chatCfgAdd: 'Añadir proveedor', cancel: 'Cancelar', chatCfgToolsHint: 'El modelo debe soportar tool-calling. En routers como OmniRoute, elige un modelo concreto (no auto/*).', settings: 'Ajustes', save: 'Guardar', chatCfgIntro: 'Conecta un LLM compatible con OpenAI para hablar con Gobby.', chatCfgPreset: 'Proveedor', chatCfgCustom: 'Personalizado', chatCfgModel: 'Modelo', chatCfgKey: 'Clave API', chatCfgKeyOptional: 'Opcional, si tu proveedor la pide', chatCfgKeyKept: 'Clave guardada. Déjalo vacío para mantenerla, o escribe una nueva para cambiarla.', chatCfgKeyEnvActive: 'Usando la clave de GOBBY_LLM_KEY', chatCfgLoad: 'Cargar', chatCfgModelsOk: 'modelos disponibles', chatCfgConnFail: 'No se pudo conectar', chatCfgKeySet: 'Clave API detectada (GOBBY_LLM_KEY)', chatCfgKeyEnv: 'Sin clave API. Si tu proveedor la necesita, arranca Gobby con GOBBY_LLM_KEY', chatHint: 'Pregúntale a Gobby por tu biblioteca, oh sí.', chatPlaceholder: 'Escribe a Gobby…', subsOff: 'Sin subtítulos',
+        copied: 'Copiado', openStream: 'Abrir', playHere: 'Reproducir aquí', preparing: 'Preparando…', chatTitle: 'Habla con Gobby', chatClear: 'Nueva conversación', chatVoiceOn: 'Voz activada', chatVoiceOff: 'Activar voz', chatThink: 'Pensar antes de responder (más lento)', chatThinking: 'Gobby está pensando…', chatReason: 'Razonamiento', chatCfgMustConnect: 'Prueba la conexión (modelos) antes de guardar', chatCfgAdd: 'Añadir proveedor', cancel: 'Cancelar', chatCfgToolsHint: 'El modelo debe soportar tool-calling. En routers como OmniRoute, elige un modelo concreto (no auto/*).', settings: 'Ajustes', save: 'Guardar', chatCfgIntro: 'Conecta un LLM compatible con OpenAI para hablar con Gobby.', chatCfgPreset: 'Proveedor', chatCfgCustom: 'Personalizado', chatCfgModel: 'Modelo', chatCfgKey: 'Clave API', chatCfgKeyOptional: 'Opcional, si tu proveedor la pide', chatCfgKeyKept: 'Clave guardada. Déjalo vacío para mantenerla, o escribe una nueva para cambiarla.', chatCfgKeyEnvActive: 'Usando la clave de GOBBY_LLM_KEY', chatCfgLoad: 'Cargar', chatCfgModelsOk: 'modelos disponibles', chatCfgConnFail: 'No se pudo conectar', chatCfgKeySet: 'Clave API detectada (GOBBY_LLM_KEY)', chatCfgKeyEnv: 'Sin clave API. Si tu proveedor la necesita, arranca Gobby con GOBBY_LLM_KEY', chatHint: 'Pregúntale a Gobby por tu biblioteca, oh sí.', chatPlaceholder: 'Escribe a Gobby…', subsOff: 'Sin subtítulos',
         subStyle: 'Subtítulos', subSize: 'Tamaño', subColor: 'Color', subBox: 'Fondo', on: 'Sí', off: 'No', playerSettings: 'Audio y subtítulos',
         scanning: 'Escaneando ficheros', source: 'Fuente', local: 'archivo local',
         name: 'Nombre', size: 'Tamaño', resolution: 'Resolución', vcodec: 'Vídeo', acodec: 'Audio', channels: 'Canales', languages: 'Idiomas',
@@ -119,7 +146,7 @@ function gobby() {
         mcpConnect: 'Conectar MCP', mcpIntro: 'Gobby expone un servidor MCP para que Claude pueda buscar en tu biblioteca y gestionar la lista de pendientes. Añádelo con una de estas formas:',
         copy: 'Copiar', mcpUrl: 'URL del servidor', mcpCli: 'Con la CLI de Claude Code', mcpTools: 'Herramientas: search_media, get_media, play_media, add_to_watchlist, list_watchlist, library_info.',
         about: 'Acerca de', aboutDeps: 'Dependencias', aboutApis: 'APIs y servicios',
-        updCheck: 'Buscar actualización', updChecking: 'Comprobando…', updLatest: 'Estás en la última versión', updNew: 'Nueva versión: {v}', updApply: 'Actualizar Gobby', updApplying: 'Actualizando…', updDone: 'Actualizado — reinicia Gobby para usar la nueva versión.', updFail: 'No se pudo actualizar',
+        updCheck: 'Buscar actualización', updChecking: 'Comprobando…', updLatest: 'Estás en la última versión', updNew: 'Nueva versión: {v}', updApply: 'Actualizar Gobby', updApplying: 'Actualizando…', updDone: 'Actualizado — Gobby se reinicia, espera un momento…', updFail: 'No se pudo actualizar',
         dServer: 'servidor', dUI: 'interfaz', dSound: 'sonido', dMcp: 'servidor MCP', dDb: 'base de datos', dTags: 'metadatos de audio', dQr: 'códigos QR', dFfmpeg: 'vídeo, audio y subtítulos', dEpub: 'lector de epub', dZip: 'lectura de zip',
         aMovies: 'pelis y series', aBooks: 'libros', aMusic: 'música', aMusicCovers: 'carátulas de música', aGames: 'juegos', aFallback: 'carátulas alt.', aRemote: 'acceso remoto', aCast: 'reproducir en TV',
       },
@@ -130,7 +157,7 @@ function gobby() {
         empty: 'Nothing here yet.', episodes: 'episodes', tracks: 'tracks', books: 'books',
         title: 'Title', notes: 'Notes', rating: 'Rating', location: 'Location', reveal: 'Open folder', uploadHere: 'Upload here', deleteFile: 'Delete from disk', deleteConfirm: 'Delete "{name}" from disk? This cannot be undone.', deleteFailed: 'Could not delete.',
         director: 'Director', cast: 'Cast', back: 'Back', add: 'Add',
-        enrichThemes: 'Fetch covers', theme: 'Toggle theme', fetching: 'Fetching covers', sound: 'Sound', language: 'Language',
+        enrichThemes: 'Fetch covers', theme: 'Toggle theme', gridZoom: 'Thumbnail size', fetching: 'Fetching covers', sound: 'Sound', language: 'Language',
         forceAll: 'Re-fetch all (overwrite)', stop: 'Stop',
         identify: 'ID (IMDb, e.g. tt1375666)', update: 'Update', updating: 'Updating…', editId: 'Edit ID', openRef: 'Open reference',
         section: 'Section', autoSection: 'Automatic', movieSection: 'Movies', seriesSection: 'Series', musicSection: 'Music', bookSection: 'Books', filesSection: 'Files',
@@ -139,7 +166,7 @@ function gobby() {
         fCover: 'Cover', fColor: 'Colour', fCoverAll: 'All', fCoverWith: 'With cover', fCoverWithout: 'Without cover',
         fRating: 'Min. rating', fAny: 'Any', fGenre: 'Genre', clear: 'Clear',
         openExternal: 'Copy link', openWith: 'Open with…',
-        copied: 'Copied', openStream: 'Open', playHere: 'Play here', preparing: 'Preparing…', chatTitle: 'Chat with Gobby', chatClear: 'New chat', chatCfgAdd: 'Add provider', cancel: 'Cancel', chatCfgToolsHint: 'The model must support tool-calling. On routers like OmniRoute, pick a concrete model (not auto/*).', settings: 'Settings', save: 'Save', chatCfgIntro: 'Connect an OpenAI-compatible LLM to chat with Gobby.', chatCfgPreset: 'Provider', chatCfgCustom: 'Custom', chatCfgModel: 'Model', chatCfgKey: 'API key', chatCfgKeyOptional: 'Optional, if your provider needs it', chatCfgKeyKept: 'Key saved. Leave blank to keep it, or type a new one to change it.', chatCfgKeyEnvActive: 'Using the key from GOBBY_LLM_KEY', chatCfgLoad: 'Load', chatCfgModelsOk: 'models available', chatCfgConnFail: 'Could not connect', chatCfgKeySet: 'API key detected (GOBBY_LLM_KEY)', chatCfgKeyEnv: 'No API key. If your provider needs one, start Gobby with GOBBY_LLM_KEY', chatHint: 'Ask Gobby about your library, oh yes.', chatPlaceholder: 'Message Gobby…', subsOff: 'No subtitles',
+        copied: 'Copied', openStream: 'Open', playHere: 'Play here', preparing: 'Preparing…', chatTitle: 'Chat with Gobby', chatClear: 'New chat', chatVoiceOn: 'Voice on', chatVoiceOff: 'Enable voice', chatThink: 'Think before replying (slower)', chatThinking: 'Gobby is thinking…', chatReason: 'Reasoning', chatCfgMustConnect: 'Test the connection (models) before saving', chatCfgAdd: 'Add provider', cancel: 'Cancel', chatCfgToolsHint: 'The model must support tool-calling. On routers like OmniRoute, pick a concrete model (not auto/*).', settings: 'Settings', save: 'Save', chatCfgIntro: 'Connect an OpenAI-compatible LLM to chat with Gobby.', chatCfgPreset: 'Provider', chatCfgCustom: 'Custom', chatCfgModel: 'Model', chatCfgKey: 'API key', chatCfgKeyOptional: 'Optional, if your provider needs it', chatCfgKeyKept: 'Key saved. Leave blank to keep it, or type a new one to change it.', chatCfgKeyEnvActive: 'Using the key from GOBBY_LLM_KEY', chatCfgLoad: 'Load', chatCfgModelsOk: 'models available', chatCfgConnFail: 'Could not connect', chatCfgKeySet: 'API key detected (GOBBY_LLM_KEY)', chatCfgKeyEnv: 'No API key. If your provider needs one, start Gobby with GOBBY_LLM_KEY', chatHint: 'Ask Gobby about your library, oh yes.', chatPlaceholder: 'Message Gobby…', subsOff: 'No subtitles',
         subStyle: 'Subtitles', subSize: 'Size', subColor: 'Colour', subBox: 'Box', on: 'On', off: 'Off', playerSettings: 'Audio & subtitles',
         scanning: 'Scanning files', source: 'Source', local: 'local file',
         name: 'Name', size: 'Size', resolution: 'Resolution', vcodec: 'Video', acodec: 'Audio', channels: 'Channels', languages: 'Languages',
@@ -163,7 +190,7 @@ function gobby() {
         mcpConnect: 'Connect MCP', mcpIntro: 'Gobby exposes an MCP server so Claude can search your library and manage the watchlist. Add it one of these ways:',
         copy: 'Copy', mcpUrl: 'Server URL', mcpCli: 'With the Claude Code CLI', mcpTools: 'Tools: search_media, get_media, play_media, add_to_watchlist, list_watchlist, library_info.',
         about: 'About', aboutDeps: 'Dependencies', aboutApis: 'APIs & services',
-        updCheck: 'Check for update', updChecking: 'Checking…', updLatest: "You're on the latest version", updNew: 'New version: {v}', updApply: 'Update Gobby', updApplying: 'Updating…', updDone: 'Updated — restart Gobby to use the new version.', updFail: 'Update failed',
+        updCheck: 'Check for update', updChecking: 'Checking…', updLatest: "You're on the latest version", updNew: 'New version: {v}', updApply: 'Update Gobby', updApplying: 'Updating…', updDone: 'Updated — Gobby is restarting, hold on…', updFail: 'Update failed',
         dServer: 'server', dUI: 'UI', dSound: 'sound', dMcp: 'MCP server', dDb: 'database', dTags: 'audio metadata', dQr: 'QR codes', dFfmpeg: 'video, audio & subtitles', dEpub: 'epub reader', dZip: 'zip reading',
         aMovies: 'movies & series', aBooks: 'books', aMusic: 'music', aMusicCovers: 'music covers', aGames: 'games', aFallback: 'fallback covers', aRemote: 'remote access', aCast: 'cast to TV',
       },
@@ -174,7 +201,7 @@ function gobby() {
         empty: 'Rien ici pour le moment.', episodes: 'épisodes', tracks: 'pistes', books: 'livres',
         title: 'Titre', notes: 'Notes', rating: 'Note', location: 'Emplacement', reveal: 'Ouvrir le dossier', uploadHere: 'Téléverser ici', deleteFile: 'Supprimer du disque', deleteConfirm: 'Supprimer « {name} » du disque ? Irréversible.', deleteFailed: 'Suppression impossible.',
         director: 'Réalisation', cast: 'Distribution', back: 'Retour', add: 'Ajouter',
-        enrichThemes: 'Chercher les jaquettes', theme: 'Changer de thème', fetching: 'Recherche des jaquettes', sound: 'Son', language: 'Langue',
+        enrichThemes: 'Chercher les jaquettes', theme: 'Changer de thème', gridZoom: 'Taille des vignettes', fetching: 'Recherche des jaquettes', sound: 'Son', language: 'Langue',
         forceAll: 'Tout rechercher (écrase)', stop: 'Arrêter',
         identify: 'ID (IMDb, ex. tt1375666)', update: 'Mettre à jour', updating: 'Mise à jour…', editId: "Modifier l'ID", openRef: 'Voir la référence',
         section: 'Section', autoSection: 'Automatique', movieSection: 'Films', seriesSection: 'Séries', musicSection: 'Musique', bookSection: 'Livres', filesSection: 'Fichiers',
@@ -183,7 +210,7 @@ function gobby() {
         fCover: 'Jaquette', fColor: 'Couleur', fCoverAll: 'Toutes', fCoverWith: 'Avec jaquette', fCoverWithout: 'Sans jaquette',
         fRating: 'Note min.', fAny: 'Toutes', fGenre: 'Genre', clear: 'Effacer',
         openExternal: 'Copier le lien', openWith: 'Ouvrir avec…',
-        copied: 'Copié', openStream: 'Ouvrir', playHere: 'Lire ici', preparing: 'Préparation…', chatTitle: 'Parler à Gobby', chatClear: 'Nouvelle conversation', chatCfgAdd: 'Ajouter un fournisseur', cancel: 'Annuler', chatCfgToolsHint: 'Le modèle doit gérer le tool-calling. Sur des routeurs comme OmniRoute, choisissez un modèle précis (pas auto/*).', settings: 'Réglages', save: 'Enregistrer', chatCfgIntro: 'Connectez un LLM compatible OpenAI pour parler à Gobby.', chatCfgPreset: 'Fournisseur', chatCfgCustom: 'Personnalisé', chatCfgModel: 'Modèle', chatCfgKey: 'Clé API', chatCfgKeyOptional: 'Optionnel, si votre fournisseur en exige une', chatCfgKeyKept: 'Clé enregistrée. Laissez vide pour la garder, ou saisissez-en une nouvelle.', chatCfgKeyEnvActive: 'Utilise la clé de GOBBY_LLM_KEY', chatCfgLoad: 'Charger', chatCfgModelsOk: 'modèles disponibles', chatCfgConnFail: 'Connexion impossible', chatCfgKeySet: 'Clé API détectée (GOBBY_LLM_KEY)', chatCfgKeyEnv: 'Pas de clé API. Si votre fournisseur en exige une, lancez Gobby avec GOBBY_LLM_KEY', chatHint: 'Demandez à Gobby votre bibliothèque, oh oui.', chatPlaceholder: 'Écrire à Gobby…', subsOff: 'Sans sous-titres',
+        copied: 'Copié', openStream: 'Ouvrir', playHere: 'Lire ici', preparing: 'Préparation…', chatTitle: 'Parler à Gobby', chatClear: 'Nouvelle conversation', chatVoiceOn: 'Voix activée', chatVoiceOff: 'Activer la voix', chatThink: 'Réfléchir avant de répondre (plus lent)', chatThinking: 'Gobby réfléchit…', chatReason: 'Raisonnement', chatCfgMustConnect: 'Testez la connexion (modèles) avant d’enregistrer', chatCfgAdd: 'Ajouter un fournisseur', cancel: 'Annuler', chatCfgToolsHint: 'Le modèle doit gérer le tool-calling. Sur des routeurs comme OmniRoute, choisissez un modèle précis (pas auto/*).', settings: 'Réglages', save: 'Enregistrer', chatCfgIntro: 'Connectez un LLM compatible OpenAI pour parler à Gobby.', chatCfgPreset: 'Fournisseur', chatCfgCustom: 'Personnalisé', chatCfgModel: 'Modèle', chatCfgKey: 'Clé API', chatCfgKeyOptional: 'Optionnel, si votre fournisseur en exige une', chatCfgKeyKept: 'Clé enregistrée. Laissez vide pour la garder, ou saisissez-en une nouvelle.', chatCfgKeyEnvActive: 'Utilise la clé de GOBBY_LLM_KEY', chatCfgLoad: 'Charger', chatCfgModelsOk: 'modèles disponibles', chatCfgConnFail: 'Connexion impossible', chatCfgKeySet: 'Clé API détectée (GOBBY_LLM_KEY)', chatCfgKeyEnv: 'Pas de clé API. Si votre fournisseur en exige une, lancez Gobby avec GOBBY_LLM_KEY', chatHint: 'Demandez à Gobby votre bibliothèque, oh oui.', chatPlaceholder: 'Écrire à Gobby…', subsOff: 'Sans sous-titres',
         subStyle: 'Sous-titres', subSize: 'Taille', subColor: 'Couleur', subBox: 'Fond', on: 'Oui', off: 'Non', playerSettings: 'Audio et sous-titres',
         scanning: 'Analyse des fichiers', source: 'Source', local: 'fichier local',
         name: 'Nom', size: 'Taille', resolution: 'Résolution', vcodec: 'Vidéo', acodec: 'Audio', channels: 'Canaux', languages: 'Langues',
@@ -207,7 +234,7 @@ function gobby() {
         mcpConnect: 'Connecter MCP', mcpIntro: 'Gobby expose un serveur MCP pour que Claude puisse chercher dans votre bibliothèque et gérer la liste à voir. Ajoutez-le de l’une de ces façons :',
         copy: 'Copier', mcpUrl: 'URL du serveur', mcpCli: 'Avec la CLI de Claude Code', mcpTools: 'Outils : search_media, get_media, play_media, add_to_watchlist, list_watchlist, library_info.',
         about: 'À propos', aboutDeps: 'Dépendances', aboutApis: 'API et services',
-        updCheck: 'Chercher une mise à jour', updChecking: 'Vérification…', updLatest: 'Vous avez la dernière version', updNew: 'Nouvelle version : {v}', updApply: 'Mettre à jour Gobby', updApplying: 'Mise à jour…', updDone: 'Mis à jour — redémarrez Gobby pour utiliser la nouvelle version.', updFail: 'Échec de la mise à jour',
+        updCheck: 'Chercher une mise à jour', updChecking: 'Vérification…', updLatest: 'Vous avez la dernière version', updNew: 'Nouvelle version : {v}', updApply: 'Mettre à jour Gobby', updApplying: 'Mise à jour…', updDone: 'Mis à jour — Gobby redémarre, un instant…', updFail: 'Échec de la mise à jour',
         dServer: 'serveur', dUI: 'interface', dSound: 'son', dMcp: 'serveur MCP', dDb: 'base de données', dTags: 'métadonnées audio', dQr: 'codes QR', dFfmpeg: 'vidéo, audio et sous-titres', dEpub: 'lecteur epub', dZip: 'lecture zip',
         aMovies: 'films et séries', aBooks: 'livres', aMusic: 'musique', aMusicCovers: 'jaquettes musique', aGames: 'jeux', aFallback: 'jaquettes de secours', aRemote: 'accès distant', aCast: 'diffuser sur TV',
       },
@@ -218,7 +245,7 @@ function gobby() {
         empty: 'Hier ist noch nichts.', episodes: 'Folgen', tracks: 'Titel', books: 'Bücher',
         title: 'Titel', notes: 'Notizen', rating: 'Bewertung', location: 'Speicherort', reveal: 'Ordner öffnen', uploadHere: 'Hier hochladen', deleteFile: 'Von Festplatte löschen', deleteConfirm: '„{name}“ von der Festplatte löschen? Nicht umkehrbar.', deleteFailed: 'Löschen fehlgeschlagen.',
         director: 'Regie', cast: 'Besetzung', back: 'Zurück', add: 'Hinzufügen',
-        enrichThemes: 'Cover suchen', theme: 'Thema wechseln', fetching: 'Cover werden gesucht', sound: 'Ton', language: 'Sprache',
+        enrichThemes: 'Cover suchen', theme: 'Thema wechseln', gridZoom: 'Vorschaugröße', fetching: 'Cover werden gesucht', sound: 'Ton', language: 'Sprache',
         forceAll: 'Alles neu suchen (überschreibt)', stop: 'Stopp',
         identify: 'ID (IMDb, z. B. tt1375666)', update: 'Aktualisieren', updating: 'Wird aktualisiert…', editId: 'ID bearbeiten', openRef: 'Referenz öffnen',
         section: 'Bereich', autoSection: 'Automatisch', movieSection: 'Filme', seriesSection: 'Serien', musicSection: 'Musik', bookSection: 'Bücher', filesSection: 'Dateien',
@@ -227,7 +254,7 @@ function gobby() {
         fCover: 'Cover', fColor: 'Colour', fCoverAll: 'Alle', fCoverWith: 'Mit Cover', fCoverWithout: 'Ohne Cover',
         fRating: 'Mind. Bewertung', fAny: 'Beliebig', fGenre: 'Genre', clear: 'Löschen',
         openExternal: 'Link kopieren', openWith: 'Öffnen mit…',
-        copied: 'Kopiert', openStream: 'Öffnen', playHere: 'Hier abspielen', preparing: 'Wird vorbereitet…', chatTitle: 'Mit Gobby reden', chatClear: 'Neuer Chat', chatCfgAdd: 'Anbieter hinzufügen', cancel: 'Abbrechen', chatCfgToolsHint: 'Das Modell muss Tool-Calling unterstützen. Bei Routern wie OmniRoute ein konkretes Modell wählen (nicht auto/*).', settings: 'Einstellungen', save: 'Speichern', chatCfgIntro: 'Verbinde ein OpenAI-kompatibles LLM, um mit Gobby zu reden.', chatCfgPreset: 'Anbieter', chatCfgCustom: 'Benutzerdefiniert', chatCfgModel: 'Modell', chatCfgKey: 'API-Schlüssel', chatCfgKeyOptional: 'Optional, falls dein Anbieter einen braucht', chatCfgKeyKept: 'Schlüssel gespeichert. Leer lassen zum Behalten, oder neuen eingeben.', chatCfgKeyEnvActive: 'Verwendet den Schlüssel aus GOBBY_LLM_KEY', chatCfgLoad: 'Laden', chatCfgModelsOk: 'Modelle verfügbar', chatCfgConnFail: 'Keine Verbindung', chatCfgKeySet: 'API-Schlüssel erkannt (GOBBY_LLM_KEY)', chatCfgKeyEnv: 'Kein API-Schlüssel. Falls dein Anbieter einen braucht, starte Gobby mit GOBBY_LLM_KEY', chatHint: 'Frag Gobby nach deiner Bibliothek, oh ja.', chatPlaceholder: 'Gobby schreiben…', subsOff: 'Keine Untertitel',
+        copied: 'Kopiert', openStream: 'Öffnen', playHere: 'Hier abspielen', preparing: 'Wird vorbereitet…', chatTitle: 'Mit Gobby reden', chatClear: 'Neuer Chat', chatVoiceOn: 'Stimme an', chatVoiceOff: 'Stimme aktivieren', chatThink: 'Vor dem Antworten nachdenken (langsamer)', chatThinking: 'Gobby denkt nach…', chatReason: 'Denkprozess', chatCfgMustConnect: 'Verbindung (Modelle) vor dem Speichern testen', chatCfgAdd: 'Anbieter hinzufügen', cancel: 'Abbrechen', chatCfgToolsHint: 'Das Modell muss Tool-Calling unterstützen. Bei Routern wie OmniRoute ein konkretes Modell wählen (nicht auto/*).', settings: 'Einstellungen', save: 'Speichern', chatCfgIntro: 'Verbinde ein OpenAI-kompatibles LLM, um mit Gobby zu reden.', chatCfgPreset: 'Anbieter', chatCfgCustom: 'Benutzerdefiniert', chatCfgModel: 'Modell', chatCfgKey: 'API-Schlüssel', chatCfgKeyOptional: 'Optional, falls dein Anbieter einen braucht', chatCfgKeyKept: 'Schlüssel gespeichert. Leer lassen zum Behalten, oder neuen eingeben.', chatCfgKeyEnvActive: 'Verwendet den Schlüssel aus GOBBY_LLM_KEY', chatCfgLoad: 'Laden', chatCfgModelsOk: 'Modelle verfügbar', chatCfgConnFail: 'Keine Verbindung', chatCfgKeySet: 'API-Schlüssel erkannt (GOBBY_LLM_KEY)', chatCfgKeyEnv: 'Kein API-Schlüssel. Falls dein Anbieter einen braucht, starte Gobby mit GOBBY_LLM_KEY', chatHint: 'Frag Gobby nach deiner Bibliothek, oh ja.', chatPlaceholder: 'Gobby schreiben…', subsOff: 'Keine Untertitel',
         subStyle: 'Untertitel', subSize: 'Größe', subColor: 'Farbe', subBox: 'Box', on: 'An', off: 'Aus', playerSettings: 'Audio & Untertitel',
         scanning: 'Dateien werden gescannt', source: 'Quelle', local: 'lokale Datei',
         name: 'Name', size: 'Größe', resolution: 'Auflösung', vcodec: 'Video', acodec: 'Audio', channels: 'Kanäle', languages: 'Sprachen',
@@ -251,7 +278,7 @@ function gobby() {
         mcpConnect: 'MCP verbinden', mcpIntro: 'Gobby stellt einen MCP-Server bereit, damit Claude deine Bibliothek durchsuchen und die Merkliste verwalten kann. Füge ihn auf eine dieser Weisen hinzu:',
         copy: 'Kopieren', mcpUrl: 'Server-URL', mcpCli: 'Mit der Claude-Code-CLI', mcpTools: 'Werkzeuge: search_media, get_media, play_media, add_to_watchlist, list_watchlist, library_info.',
         about: 'Über', aboutDeps: 'Abhängigkeiten', aboutApis: 'APIs & Dienste',
-        updCheck: 'Nach Update suchen', updChecking: 'Wird geprüft…', updLatest: 'Du hast die neueste Version', updNew: 'Neue Version: {v}', updApply: 'Gobby aktualisieren', updApplying: 'Wird aktualisiert…', updDone: 'Aktualisiert — starte Gobby neu, um die neue Version zu nutzen.', updFail: 'Update fehlgeschlagen',
+        updCheck: 'Nach Update suchen', updChecking: 'Wird geprüft…', updLatest: 'Du hast die neueste Version', updNew: 'Neue Version: {v}', updApply: 'Gobby aktualisieren', updApplying: 'Wird aktualisiert…', updDone: 'Aktualisiert — Gobby startet neu, einen Moment…', updFail: 'Update fehlgeschlagen',
         dServer: 'Server', dUI: 'Oberfläche', dSound: 'Ton', dMcp: 'MCP-Server', dDb: 'Datenbank', dTags: 'Audio-Metadaten', dQr: 'QR-Codes', dFfmpeg: 'Video, Audio & Untertitel', dEpub: 'epub-Leser', dZip: 'zip-Lesen',
         aMovies: 'Filme & Serien', aBooks: 'Bücher', aMusic: 'Musik', aMusicCovers: 'Musik-Cover', aGames: 'Spiele', aFallback: 'Ersatz-Cover', aRemote: 'Fernzugriff', aCast: 'auf TV streamen',
       },
@@ -262,7 +289,7 @@ function gobby() {
         empty: 'Qui non c’è ancora niente.', episodes: 'episodi', tracks: 'tracce', books: 'libri',
         title: 'Titolo', notes: 'Note', rating: 'Valutazione', location: 'Posizione', reveal: 'Apri cartella', uploadHere: 'Carica qui', deleteFile: 'Elimina dal disco', deleteConfirm: 'Eliminare «{name}» dal disco? Irreversibile.', deleteFailed: 'Impossibile eliminare.',
         director: 'Regia', cast: 'Cast', back: 'Indietro', add: 'Aggiungi',
-        enrichThemes: 'Cerca copertine', theme: 'Cambia tema', fetching: 'Ricerca copertine', sound: 'Suono', language: 'Lingua',
+        enrichThemes: 'Cerca copertine', theme: 'Cambia tema', gridZoom: 'Dimensione miniature', fetching: 'Ricerca copertine', sound: 'Suono', language: 'Lingua',
         forceAll: 'Ricerca tutto (sovrascrive)', stop: 'Ferma',
         identify: 'ID (IMDb, es. tt1375666)', update: 'Aggiorna', updating: 'Aggiornamento…', editId: 'Modifica ID', openRef: 'Apri riferimento',
         section: 'Sezione', autoSection: 'Automatica', movieSection: 'Film', seriesSection: 'Serie', musicSection: 'Musica', bookSection: 'Libri', filesSection: 'File',
@@ -271,7 +298,7 @@ function gobby() {
         fCover: 'Copertina', fColor: 'Colore', fCoverAll: 'Tutte', fCoverWith: 'Con copertina', fCoverWithout: 'Senza copertina',
         fRating: 'Valutazione min.', fAny: 'Qualsiasi', fGenre: 'Genere', clear: 'Pulisci',
         openExternal: 'Copia link', openWith: 'Apri con…',
-        copied: 'Copiato', openStream: 'Apri', playHere: 'Riproduci qui', preparing: 'Preparazione…', chatTitle: 'Parla con Gobby', chatClear: 'Nuova conversazione', chatCfgAdd: 'Aggiungi provider', cancel: 'Annulla', chatCfgToolsHint: 'Il modello deve supportare il tool-calling. Su router come OmniRoute, scegli un modello concreto (non auto/*).', settings: 'Impostazioni', save: 'Salva', chatCfgIntro: 'Collega un LLM compatibile con OpenAI per parlare con Gobby.', chatCfgPreset: 'Provider', chatCfgCustom: 'Personalizzato', chatCfgModel: 'Modello', chatCfgKey: 'Chiave API', chatCfgKeyOptional: 'Opzionale, se il provider la richiede', chatCfgKeyKept: 'Chiave salvata. Lascia vuoto per mantenerla, o inseriscine una nuova.', chatCfgKeyEnvActive: 'Uso la chiave da GOBBY_LLM_KEY', chatCfgLoad: 'Carica', chatCfgModelsOk: 'modelli disponibili', chatCfgConnFail: 'Connessione fallita', chatCfgKeySet: 'Chiave API rilevata (GOBBY_LLM_KEY)', chatCfgKeyEnv: 'Nessuna chiave API. Se il provider la richiede, avvia Gobby con GOBBY_LLM_KEY', chatHint: 'Chiedi a Gobby della tua libreria, oh sì.', chatPlaceholder: 'Scrivi a Gobby…', subsOff: 'Senza sottotitoli',
+        copied: 'Copiato', openStream: 'Apri', playHere: 'Riproduci qui', preparing: 'Preparazione…', chatTitle: 'Parla con Gobby', chatClear: 'Nuova conversazione', chatVoiceOn: 'Voce attiva', chatVoiceOff: 'Attiva voce', chatThink: 'Pensa prima di rispondere (più lento)', chatThinking: 'Gobby sta pensando…', chatReason: 'Ragionamento', chatCfgMustConnect: 'Prova la connessione (modelli) prima di salvare', chatCfgAdd: 'Aggiungi provider', cancel: 'Annulla', chatCfgToolsHint: 'Il modello deve supportare il tool-calling. Su router come OmniRoute, scegli un modello concreto (non auto/*).', settings: 'Impostazioni', save: 'Salva', chatCfgIntro: 'Collega un LLM compatibile con OpenAI per parlare con Gobby.', chatCfgPreset: 'Provider', chatCfgCustom: 'Personalizzato', chatCfgModel: 'Modello', chatCfgKey: 'Chiave API', chatCfgKeyOptional: 'Opzionale, se il provider la richiede', chatCfgKeyKept: 'Chiave salvata. Lascia vuoto per mantenerla, o inseriscine una nuova.', chatCfgKeyEnvActive: 'Uso la chiave da GOBBY_LLM_KEY', chatCfgLoad: 'Carica', chatCfgModelsOk: 'modelli disponibili', chatCfgConnFail: 'Connessione fallita', chatCfgKeySet: 'Chiave API rilevata (GOBBY_LLM_KEY)', chatCfgKeyEnv: 'Nessuna chiave API. Se il provider la richiede, avvia Gobby con GOBBY_LLM_KEY', chatHint: 'Chiedi a Gobby della tua libreria, oh sì.', chatPlaceholder: 'Scrivi a Gobby…', subsOff: 'Senza sottotitoli',
         subStyle: 'Sottotitoli', subSize: 'Dimensione', subColor: 'Colore', subBox: 'Sfondo', on: 'Sì', off: 'No', playerSettings: 'Audio e sottotitoli',
         scanning: 'Scansione dei file', source: 'Fonte', local: 'file locale',
         name: 'Nome', size: 'Dimensione', resolution: 'Risoluzione', vcodec: 'Video', acodec: 'Audio', channels: 'Canali', languages: 'Lingue',
@@ -295,7 +322,7 @@ function gobby() {
         mcpConnect: 'Connetti MCP', mcpIntro: 'Gobby espone un server MCP perché Claude possa cercare nella tua libreria e gestire la lista da vedere. Aggiungilo in uno di questi modi:',
         copy: 'Copia', mcpUrl: 'URL del server', mcpCli: 'Con la CLI di Claude Code', mcpTools: 'Strumenti: search_media, get_media, play_media, add_to_watchlist, list_watchlist, library_info.',
         about: 'Info', aboutDeps: 'Dipendenze', aboutApis: 'API e servizi',
-        updCheck: 'Cerca aggiornamenti', updChecking: 'Controllo…', updLatest: 'Hai la versione più recente', updNew: 'Nuova versione: {v}', updApply: 'Aggiorna Gobby', updApplying: 'Aggiornamento…', updDone: 'Aggiornato — riavvia Gobby per usare la nuova versione.', updFail: 'Aggiornamento non riuscito',
+        updCheck: 'Cerca aggiornamenti', updChecking: 'Controllo…', updLatest: 'Hai la versione più recente', updNew: 'Nuova versione: {v}', updApply: 'Aggiorna Gobby', updApplying: 'Aggiornamento…', updDone: 'Aggiornato — Gobby si riavvia, un momento…', updFail: 'Aggiornamento non riuscito',
         dServer: 'server', dUI: 'interfaccia', dSound: 'suono', dMcp: 'server MCP', dDb: 'database', dTags: 'metadati audio', dQr: 'codici QR', dFfmpeg: 'video, audio e sottotitoli', dEpub: 'lettore epub', dZip: 'lettura zip',
         aMovies: 'film e serie', aBooks: 'libri', aMusic: 'musica', aMusicCovers: 'copertine musica', aGames: 'giochi', aFallback: 'copertine di riserva', aRemote: 'accesso remoto', aCast: 'trasmetti in TV',
       },
@@ -306,7 +333,7 @@ function gobby() {
         empty: 'Ainda não há nada aqui.', episodes: 'episódios', tracks: 'faixas', books: 'livros',
         title: 'Título', notes: 'Notas', rating: 'Avaliação', location: 'Localização', reveal: 'Abrir pasta', uploadHere: 'Enviar aqui', deleteFile: 'Apagar do disco', deleteConfirm: 'Apagar «{name}» do disco? Não pode ser desfeito.', deleteFailed: 'Não foi possível apagar.',
         director: 'Realização', cast: 'Elenco', back: 'Voltar', add: 'Adicionar',
-        enrichThemes: 'Procurar capas', theme: 'Mudar tema', fetching: 'A procurar capas', sound: 'Som', language: 'Idioma',
+        enrichThemes: 'Procurar capas', theme: 'Mudar tema', gridZoom: 'Tamanho das miniaturas', fetching: 'A procurar capas', sound: 'Som', language: 'Idioma',
         forceAll: 'Procurar tudo (substitui)', stop: 'Parar',
         identify: 'ID (IMDb, ex. tt1375666)', update: 'Atualizar', updating: 'A atualizar…', editId: 'Editar ID', openRef: 'Ver referência',
         section: 'Secção', autoSection: 'Automática', movieSection: 'Filmes', seriesSection: 'Séries', musicSection: 'Música', bookSection: 'Livros', filesSection: 'Ficheiros',
@@ -315,7 +342,7 @@ function gobby() {
         fCover: 'Capa', fColor: 'Cor', fCoverAll: 'Todas', fCoverWith: 'Com capa', fCoverWithout: 'Sem capa',
         fRating: 'Avaliação mín.', fAny: 'Qualquer', fGenre: 'Género', clear: 'Limpar',
         openExternal: 'Copiar ligação', openWith: 'Abrir com…',
-        copied: 'Copiado', openStream: 'Abrir', playHere: 'Reproduzir aqui', preparing: 'A preparar…', chatTitle: 'Fala com o Gobby', chatClear: 'Nova conversa', chatCfgAdd: 'Adicionar fornecedor', cancel: 'Cancelar', chatCfgToolsHint: 'O modelo deve suportar tool-calling. Em routers como OmniRoute, escolhe um modelo concreto (não auto/*).', settings: 'Definições', save: 'Guardar', chatCfgIntro: 'Liga um LLM compatível com OpenAI para falar com o Gobby.', chatCfgPreset: 'Fornecedor', chatCfgCustom: 'Personalizado', chatCfgModel: 'Modelo', chatCfgKey: 'Chave API', chatCfgKeyOptional: 'Opcional, se o teu fornecedor precisar', chatCfgKeyKept: 'Chave guardada. Deixa vazio para manter, ou escreve uma nova.', chatCfgKeyEnvActive: 'A usar a chave de GOBBY_LLM_KEY', chatCfgLoad: 'Carregar', chatCfgModelsOk: 'modelos disponíveis', chatCfgConnFail: 'Não foi possível ligar', chatCfgKeySet: 'Chave API detetada (GOBBY_LLM_KEY)', chatCfgKeyEnv: 'Sem chave API. Se o teu fornecedor precisar, arranca o Gobby com GOBBY_LLM_KEY', chatHint: 'Pergunta ao Gobby sobre a tua biblioteca, oh sim.', chatPlaceholder: 'Escreve ao Gobby…', subsOff: 'Sem legendas',
+        copied: 'Copiado', openStream: 'Abrir', playHere: 'Reproduzir aqui', preparing: 'A preparar…', chatTitle: 'Fala com o Gobby', chatClear: 'Nova conversa', chatVoiceOn: 'Voz ativada', chatVoiceOff: 'Ativar voz', chatThink: 'Pensar antes de responder (mais lento)', chatThinking: 'Gobby está a pensar…', chatReason: 'Raciocínio', chatCfgMustConnect: 'Testa a ligação (modelos) antes de guardar', chatCfgAdd: 'Adicionar fornecedor', cancel: 'Cancelar', chatCfgToolsHint: 'O modelo deve suportar tool-calling. Em routers como OmniRoute, escolhe um modelo concreto (não auto/*).', settings: 'Definições', save: 'Guardar', chatCfgIntro: 'Liga um LLM compatível com OpenAI para falar com o Gobby.', chatCfgPreset: 'Fornecedor', chatCfgCustom: 'Personalizado', chatCfgModel: 'Modelo', chatCfgKey: 'Chave API', chatCfgKeyOptional: 'Opcional, se o teu fornecedor precisar', chatCfgKeyKept: 'Chave guardada. Deixa vazio para manter, ou escreve uma nova.', chatCfgKeyEnvActive: 'A usar a chave de GOBBY_LLM_KEY', chatCfgLoad: 'Carregar', chatCfgModelsOk: 'modelos disponíveis', chatCfgConnFail: 'Não foi possível ligar', chatCfgKeySet: 'Chave API detetada (GOBBY_LLM_KEY)', chatCfgKeyEnv: 'Sem chave API. Se o teu fornecedor precisar, arranca o Gobby com GOBBY_LLM_KEY', chatHint: 'Pergunta ao Gobby sobre a tua biblioteca, oh sim.', chatPlaceholder: 'Escreve ao Gobby…', subsOff: 'Sem legendas',
         subStyle: 'Legendas', subSize: 'Tamanho', subColor: 'Cor', subBox: 'Fundo', on: 'Sim', off: 'Não', playerSettings: 'Áudio e legendas',
         scanning: 'A analisar ficheiros', source: 'Fonte', local: 'ficheiro local',
         name: 'Nome', size: 'Tamanho', resolution: 'Resolução', vcodec: 'Vídeo', acodec: 'Áudio', channels: 'Canais', languages: 'Idiomas',
@@ -339,7 +366,7 @@ function gobby() {
         mcpConnect: 'Ligar MCP', mcpIntro: 'O Gobby expõe um servidor MCP para que o Claude possa pesquisar na sua biblioteca e gerir a lista para ver. Adicione-o de uma destas formas:',
         copy: 'Copiar', mcpUrl: 'URL do servidor', mcpCli: 'Com a CLI do Claude Code', mcpTools: 'Ferramentas: search_media, get_media, play_media, add_to_watchlist, list_watchlist, library_info.',
         about: 'Acerca', aboutDeps: 'Dependências', aboutApis: 'APIs e serviços',
-        updCheck: 'Procurar atualização', updChecking: 'A verificar…', updLatest: 'Tem a versão mais recente', updNew: 'Nova versão: {v}', updApply: 'Atualizar o Gobby', updApplying: 'A atualizar…', updDone: 'Atualizado — reinicie o Gobby para usar a nova versão.', updFail: 'Falha na atualização',
+        updCheck: 'Procurar atualização', updChecking: 'A verificar…', updLatest: 'Tem a versão mais recente', updNew: 'Nova versão: {v}', updApply: 'Atualizar o Gobby', updApplying: 'A atualizar…', updDone: 'Atualizado — o Gobby reinicia, aguarde…', updFail: 'Falha na atualização',
         dServer: 'servidor', dUI: 'interface', dSound: 'som', dMcp: 'servidor MCP', dDb: 'base de dados', dTags: 'metadados de áudio', dQr: 'códigos QR', dFfmpeg: 'vídeo, áudio e legendas', dEpub: 'leitor epub', dZip: 'leitura zip',
         aMovies: 'filmes e séries', aBooks: 'livros', aMusic: 'música', aMusicCovers: 'capas de música', aGames: 'jogos', aFallback: 'capas alternativas', aRemote: 'acesso remoto', aCast: 'transmitir para TV',
       },
@@ -351,6 +378,9 @@ function gobby() {
     get top() { return this.stack[this.stack.length - 1]; },
 
     init() {
+      if (window.__gobbyInit) return;
+      window.__gobbyInit = true;
+      this.applyGridZoom();
       this.theme = localStorage.getItem('gobby-theme') || 'dark';
       document.documentElement.setAttribute('data-theme', this.theme);
       // First visit: honor the browser's language if we speak it, else Spanish.
@@ -361,6 +391,7 @@ function gobby() {
       });
       this.loadInfo();
       this.loadHome();
+      this._chatRestore();
       this.pollProgress(); // pick up a scan/enrich already running at startup
       this.initCast();
       this.initSound();
@@ -643,6 +674,8 @@ function gobby() {
         bookmark: '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/>',
         back: '<path d="m12 19-7-7 7-7M19 12H5"/>',
         check: '<path d="M20 6 9 17l-5-5"/>',
+        save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
+        brain: '<path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04Z"/>',
         close: '<path d="M18 6 6 18M6 6l12 12"/>',
         gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>',
         refresh: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
@@ -656,6 +689,7 @@ function gobby() {
         external: '<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
         monitor: '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8M12 17v4"/>',
         volume: '<path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/>',
+        volumeOff: '<path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M22 9l-6 6M16 9l6 6"/>',
         globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20Z"/>',
         languages: '<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>',
         info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
@@ -669,6 +703,8 @@ function gobby() {
         layers: '<path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/>',
         trash: '<path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/>',
         plus: '<path d="M12 5v14M5 12h14"/>',
+        minus: '<path d="M5 12h14"/>',
+        grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
         gamepad: '<path d="M6 12h4M8 10v4M15 11h.01M18 13h.01"/><rect width="20" height="12" x="2" y="6" rx="6"/>',
         stop: '<rect width="12" height="12" x="6" y="6" rx="2" fill="currentColor" stroke="none"/>',
         share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>',
@@ -869,20 +905,23 @@ function gobby() {
     },
     pushView(v) {
       this.stack.push(v);
-      // Deep-linkable URL for items so a link points at the exact thing. Other
-      // views keep the bare URL (no meaningful shareable identity).
-      const hash = v.view === 'item' && v.item ? '#item/' + v.item.id : '';
-      history.pushState({ gobby: true }, '', hash || location.pathname);
+      let hash = '';
+      if (v.view === 'item' && v.item) hash = '#item/' + v.item.id;
+      else if (v.view === 'series' && v.group) hash = '#series/' + encodeURIComponent(v.group.name);
+      else hash = '#v' + this.stack.length;
+      history.pushState({ gobby: true, depth: this.stack.length }, '', hash);
     },
     back() {
       if (this.showFilters) { this.showFilters = false; return; }
+      if (this.videoOpen) { this.stopVideo(); return; }
       if (this.stack.length > 1) history.back();
     },
 
     page: 1,
     looseTotal: 0,
     pageSize: 60,
-    pages() { return Math.max(1, Math.ceil(this.looseTotal / this.pageSize)); },
+    loadingMore: false,
+    hasMore() { return this.loose.length < this.looseTotal; },
     async load(resetPage = true) {
       if (this.tab === 'files') { this.goFiles(); return; }
       if (this.tab === 'home') return; // home shelves filter client-side (see applyFilters)
@@ -895,11 +934,16 @@ function gobby() {
       this.looseTotal = v.loose_total || 0;
       this.pageSize = v.page_size || 60;
     },
-    goPage(p) {
-      if (p < 1 || p > this.pages()) return;
-      this.page = p;
-      this.load(false);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    async loadMore() {
+      if (this.loadingMore || !this.hasMore() || this.tab === 'home' || this.tab === 'files') return;
+      this.loadingMore = true;
+      this.page += 1;
+      const fq = this.filterQS();
+      const r = await fetch(`/api/browse?kind=${this.tab}&q=${encodeURIComponent(this.q)}&page=${this.page}${fq ? '&' + fq : ''}`);
+      const v = (await r.json()) || {};
+      const seen = new Set(this.loose.map(it => it.id));
+      for (const it of (v.loose || [])) if (!seen.has(it.id)) this.loose.push(it);
+      this.loadingMore = false;
     },
 
     // Reactive accessor for the current series' remote meta (synopsis/cast/…),
@@ -1076,11 +1120,23 @@ function gobby() {
       try {
         const res = await fetch('/api/update/apply', { method: 'POST' });
         const r = await res.json();
-        this.upd = res.ok
-          ? { state: 'done', latest: this.upd.latest, msg: '' }
-          : { state: 'error', latest: '', msg: r.error || this.t('updFail') };
+        if (res.ok) {
+          this.upd = { state: 'done', latest: this.upd.latest, msg: '' };
+          this._waitForRestart();
+        } else {
+          this.upd = { state: 'error', latest: '', msg: r.error || this.t('updFail') };
+        }
       } catch (e) {
         this.upd = { state: 'error', latest: '', msg: String(e) };
+      }
+    },
+    async _waitForRestart() {
+      for (let i = 0; i < 40; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        try {
+          const r = await fetch('/api/info', { cache: 'no-store' });
+          if (r.ok) { location.reload(); return; }
+        } catch (e) {}
       }
     },
     mcpCopied: '',
@@ -1316,6 +1372,7 @@ function gobby() {
     // track, then play. Used on open, seek, and audio change.
     _loadVideo(at) {
       const v = this.$refs.vplayer;
+      if (!v) return;
       const item = this._playItem;
       let url = this.streamURL(item);
       if (this.videoRemux) {
@@ -1588,7 +1645,8 @@ function gobby() {
     lbInfo: true,
     lbW: 0,
     lbH: 0,
-    openLightbox(it) { this.lightbox = it; this.lbW = 0; this.lbH = 0; this.markOpened(it); },
+    lbZoom: 1,
+    openLightbox(it) { this.lightbox = it; this.lbW = 0; this.lbH = 0; this.lbZoom = 1; this.markOpened(it); },
     photoName(it) { const p = (it && it.rel_path) || ''; const s = p.split('/').pop(); return s || p; },
     photoExt(it) { const m = ((it && it.rel_path) || '').match(/\.([^.]+)$/); return m ? m[1].toUpperCase() : '—'; },
     chatOpen: false,
@@ -1596,14 +1654,45 @@ function gobby() {
     chatInput: '',
     chatBusy: false,
     chatView: 'chat',
-    chatCfg: { name: '', base_url: '', model: '', key: '', keySet: false },
+    chatSpeak: false,
+    chatSuggests() {
+      const m = {
+        es: ['¿Qué tengo para ver?', 'Sorpréndeme', 'Sigo viendo…'],
+        en: ['What can I watch?', 'Surprise me', 'Continue watching'],
+        fr: ['Que puis-je regarder ?', 'Surprends-moi', 'Reprendre'],
+        de: ['Was kann ich sehen?', 'Überrasch mich', 'Weiterschauen'],
+        it: ['Cosa posso vedere?', 'Sorprendimi', 'Continua a guardare'],
+        pt: ['O que posso ver?', 'Surpreenda-me', 'Continuar a ver'],
+      };
+      return m[this.lang] || m.en;
+    },
+    useSuggest(s) { this.chatInput = s; this.sendChat(); },
+    speak(text) {
+      if (!this.chatSpeak || !window.speechSynthesis) return;
+      const clean = text.replace(/[*_`#🧦▶️🔍📚🔖🕒ℹ️➕]/g, '').trim();
+      if (!clean) return;
+      const u = new SpeechSynthesisUtterance(clean);
+      u.lang = { es: 'es-ES', en: 'en-US', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', pt: 'pt-PT' }[this.lang] || 'es-ES';
+      u.rate = 1.05; u.pitch = 1.15;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    },
+    chatCfg: { name: '', base_url: '', model: '', key: '', keySet: false, think: true },
     chatModels: [],
     modelsBusy: false,
     modelsMsg: '',
     modelsErr: false,
+    chatConnOK: false,
+    modelPickOpen: false,
+    modelQuery: '',
+    filteredModels() {
+      const q = this.modelQuery.trim().toLowerCase();
+      return q ? this.chatModels.filter(m => m.toLowerCase().includes(q)) : this.chatModels;
+    },
     async loadModels() {
-      if (!this.chatCfg.base_url) return;
+      if (!this.chatCfg.base_url) return false;
       this.modelsBusy = true; this.modelsMsg = ''; this.modelsErr = false;
+      let ok = false;
       try {
         const r = await fetch('/api/chat/models?url=' + encodeURIComponent(this.chatCfg.base_url) + (this.chatCfg.key ? '&key=' + encodeURIComponent(this.chatCfg.key) : ''));
         if (!r.ok) { this.modelsErr = true; this.modelsMsg = (await r.text()).trim() || this.t('chatCfgConnFail'); }
@@ -1611,10 +1700,19 @@ function gobby() {
           this.chatModels = await r.json();
           this.modelsMsg = this.chatModels.length + ' ' + this.t('chatCfgModelsOk');
           if (!this.chatCfg.model && this.chatModels.length) this.chatCfg.model = this.chatModels[0];
+          ok = true;
         }
       } catch (e) { this.modelsErr = true; this.modelsMsg = this.t('chatCfgConnFail'); }
       this.modelsBusy = false;
+      this.chatConnOK = ok;
+      return ok;
     },
+    async testAndPickModel() {
+      if (this.modelsBusy) return;
+      const ok = await this.loadModels();
+      if (ok) { this.modelQuery = ''; this.modelPickOpen = true; this.$nextTick(() => this.$refs.modelSearch && this.$refs.modelSearch.focus()); }
+    },
+    pickModel(m) { this.chatCfg.model = m; this.modelPickOpen = false; },
     llmPresets: [
       { name: 'Ollama', url: 'http://localhost:11434/v1', model: 'llama3.1' },
       { name: 'LM Studio', url: 'http://localhost:1234/v1', model: '' },
@@ -1625,12 +1723,13 @@ function gobby() {
     ],
     providers: [],
     activeProv: 0,
+    activeModelName() { const p = this.providers[this.activeProv]; return p ? (p.model || p.name || '') : ''; },
     envKey: false,
     editing: false,
     editIdx: -1,
     applyPreset(name) {
       const p = this.llmPresets.find(x => x.name === name);
-      if (p) { this.chatCfg.name = p.name; this.chatCfg.base_url = p.url; if (p.model) this.chatCfg.model = p.model; }
+      if (p) { this.chatCfg.name = p.name; this.chatCfg.base_url = p.url; if (p.model) this.chatCfg.model = p.model; this.chatConnOK = false; }
     },
     _ready() {
       this.info.chat_ready = this.providers.length > 0 && !!(this.providers[this.activeProv]?.base_url && this.providers[this.activeProv]?.model);
@@ -1646,7 +1745,7 @@ function gobby() {
     },
     async persistProviders() {
       const payload = this.providers.map(p => ({
-        name: p.name, base_url: p.base_url, model: p.model,
+        name: p.name, base_url: p.base_url, model: p.model, no_think: !!p.no_think,
         key: (p._key !== undefined ? p._key : (p.has_key ? '\x00keep' : '')),
       }));
       const r = await fetch('/api/chat/config', {
@@ -1657,17 +1756,17 @@ function gobby() {
       this._ready();
     },
     newProvider() {
-      this.chatCfg = { name: '', base_url: '', model: '', key: '', keySet: false };
-      this.chatModels = []; this.modelsMsg = ''; this.editIdx = -1; this.editing = true;
+      this.chatCfg = { name: '', base_url: '', model: '', key: '', keySet: false, think: true };
+      this.chatModels = []; this.modelsMsg = ''; this.editIdx = -1; this.editing = true; this.chatConnOK = false; this.modelPickOpen = false;
     },
     editProvider(i) {
       const p = this.providers[i];
-      this.chatCfg = { name: p.name, base_url: p.base_url, model: p.model, key: '', keySet: !!p.has_key };
-      this.chatModels = []; this.modelsMsg = ''; this.editIdx = i; this.editing = true;
+      this.chatCfg = { name: p.name, base_url: p.base_url, model: p.model, key: '', keySet: !!p.has_key, think: !p.no_think };
+      this.chatModels = []; this.modelsMsg = ''; this.editIdx = i; this.editing = true; this.chatConnOK = false; this.modelPickOpen = false;
     },
     async saveProvider() {
-      if (!this.chatCfg.base_url || !this.chatCfg.model) return;
-      const p = { name: this.chatCfg.name || this.chatCfg.base_url, base_url: this.chatCfg.base_url, model: this.chatCfg.model, has_key: this.chatCfg.keySet };
+      if (!this.chatConnOK || !this.chatCfg.base_url || !this.chatCfg.model) return;
+      const p = { name: this.chatCfg.name || this.chatCfg.base_url, base_url: this.chatCfg.base_url, model: this.chatCfg.model, has_key: this.chatCfg.keySet, no_think: !this.chatCfg.think };
       if (this.chatCfg.key) { p._key = this.chatCfg.key; p.has_key = true; }
       else if (this.chatCfg.keySet) p._key = '\x00keep';
       else p._key = '';
@@ -1675,6 +1774,7 @@ function gobby() {
       else { this.providers.push(p); this.activeProv = this.providers.length - 1; }
       await this.persistProviders();
       this.editing = false;
+      this.modelPickOpen = false;
       if (this.info.chat_ready) { this.chatView = 'chat'; this.$nextTick(() => this.$refs.chatInput && this.$refs.chatInput.focus()); }
     },
     async selectProvider(i) {
@@ -1695,28 +1795,85 @@ function gobby() {
       this.chatView = this.info.chat_ready ? 'chat' : 'config';
       if (this.info.chat_ready) this.$nextTick(() => this.$refs.chatInput && this.$refs.chatInput.focus());
     },
+    chatSession: (localStorage.getItem('gobby-chat-session') || (() => { const s = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('gobby-chat-session', s); return s; })()),
+    _chatPersist() {
+      try { localStorage.setItem('gobby-chat-msgs', JSON.stringify(this.chatMsgs.slice(-30))); } catch (e) {}
+    },
+    _chatRestore() {
+      try {
+        const raw = localStorage.getItem('gobby-chat-msgs');
+        if (raw) this.chatMsgs = JSON.parse(raw) || [];
+        if (localStorage.getItem('gobby-chat-pending') === '1') {
+          localStorage.removeItem('gobby-chat-pending');
+          const last = this.chatMsgs[this.chatMsgs.length - 1];
+          if (last && last.role === 'me') this._chatSend(last.text, true);
+        }
+      } catch (e) {}
+    },
+    toolLabel(name) {
+      return ({
+        search_media: '🔍 buscando', browse_library: '📚 explorando',
+        list_watchlist: '🔖 lista pendiente', recent_media: '🕒 recientes',
+        library_info: 'ℹ️ biblioteca', open_media: '▶️ abriendo', add_to_watchlist: '➕ a la lista', list_episodes: '📺 episodios',
+      })[name] || ('🔧 ' + name);
+    },
     async sendChat() {
       const text = this.chatInput.trim();
       if (!text || this.chatBusy) return;
       this.chatMsgs.push({ role: 'me', text });
+      this._chatPersist();
       this.chatInput = '';
+      this._chatSend(text, false);
+    },
+    async _chatSend(text, resume) {
       this.chatBusy = true;
+      localStorage.setItem('gobby-chat-pending', '1');
       this._chatAbort = new AbortController();
       this.$nextTick(() => this._chatScroll());
       try {
         const r = await fetch('/api/chat', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text }), signal: this._chatAbort.signal,
+          body: JSON.stringify({ message: text, session: this.chatSession, resume: !!resume }), signal: this._chatAbort.signal,
         });
         const d = await r.json();
-        this.chatMsgs.push({ role: 'gobby', text: d.reply || '…' });
+        this.chatMsgs.push({ role: 'gobby', text: d.reply || '…', tools: (d.tools || []).map(t => this.toolLabel(t)), cards: d.open_id ? [] : (d.cards || []), reasoning: d.reasoning || '', showReason: false });
+        this.speak(d.reply || '');
+        if (d.open_id) this.chatPlay(d.open_id);
       } catch (e) {
         if (e.name !== 'AbortError') this.chatMsgs.push({ role: 'gobby', text: 'Gobby no responde ahora mismo.' });
       }
       this.chatBusy = false;
+      localStorage.removeItem('gobby-chat-pending');
+      this._chatPersist();
       this.$nextTick(() => this._chatScroll());
     },
+    chatCardCover(c) { return `/api/item/${c.id}/cover`; },
+    async chatPlay(id) {
+      const r = await fetch(`/api/item/${id}`);
+      if (!r.ok) return;
+      const it = await r.json();
+      this.chatOpen = false;
+      if (it.kind !== 'video' && it.kind !== 'audio') { this.openItem(it); return; }
+      this.pushView({ view: 'item', item: it });
+      let tries = 0;
+      const go = () => {
+        if (this.$refs.vplayer) { this.playHere(it); return; }
+        if (tries++ < 40) setTimeout(go, 25);
+      };
+      this.$nextTick(go);
+    },
     stopChat() { if (this._chatAbort) this._chatAbort.abort(); this.chatBusy = false; },
+    clearChat() {
+      this.chatMsgs = [];
+      localStorage.removeItem('gobby-chat-msgs');
+      fetch('/api/chat/reset', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session: this.chatSession }),
+      }).catch(() => {});
+      const s = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem('gobby-chat-session', s);
+      this.chatSession = s;
+    },
     chatListening: false,
     chatVoice() {
       if (this.chatListening) { this._chatRec && this._chatRec.stop(); return; }
@@ -1732,6 +1889,14 @@ function gobby() {
       rec.start();
     },
     _chatScroll() { const l = this.$refs.chatLog; if (l) l.scrollTop = l.scrollHeight; },
+    mdChat(s) {
+      const esc = (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return esc
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>')
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    },
     markOpened(item) { fetch(`/api/item/${item.id}/opened`, { method: 'POST' }).catch(() => {}); },
     // percent watched for the card bar; 0 hides it
     progressPct(it) {
@@ -1856,6 +2021,7 @@ function gobby() {
       const poster = group && group.items && group.items.find(i => i.has_cover);
       return poster ? this.artStyle(poster) : 'display:none';
     },
+    groupPoster(g) { return (g && g.items && (g.items.find(i => i.has_cover || i.cover_id) || g.items[0])) || null; },
 
     // ---- metadata chips (technical, from the local filename parse) ----
     tech(it) { return (it && it.meta && it.meta.tech) || null; },

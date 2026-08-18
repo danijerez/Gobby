@@ -53,6 +53,15 @@
       <button class="filter-btn" x-show="top.view === 'home' && tab !== 'watch'"
               :class="{active: showFilters, 'has-filters': activeChips().length}"
               @click="showFilters = !showFilters" :title="t('filters')" x-html="svg('filter')"></button>
+      <div class="zoom-ctl" x-show="top.view === 'home' && tab !== 'watch' && tab !== 'files'">
+        <button class="filter-btn" @click="gridZoomOpen = !gridZoomOpen" :class="{active: gridZoomOpen}" :title="t('gridZoom')" x-html="svg('grid')"></button>
+        <div class="zoom-pop" x-show="gridZoomOpen" @click.outside="gridZoomOpen=false" x-transition style="display:none">
+          <button class="zoom-step" @click="setGridZoom(gridZoom - 20)" x-html="svg('minus')"></button>
+          <input type="range" min="90" max="320" step="10" :value="gridZoom"
+                 @input="setGridZoom(+$event.target.value)" @change="setGridZoom(+$event.target.value)">
+          <button class="zoom-step" @click="setGridZoom(gridZoom + 20)" x-html="svg('plus')"></button>
+        </div>
+      </div>
       <div class="chips-inline" x-show="top.view === 'home' && tab !== 'watch' && activeChips().length && !searchOpen">
         <template x-for="c in activeChips()" :key="c.k">
           <span class="filter-chip"><span class="chip-dot" x-show="c.dot" :style="'background:'+c.dot"></span><span x-text="c.label"></span><button @click="removeChip(c.k)" :title="t('remove')" x-html="svg('close')"></button></span>
@@ -278,16 +287,22 @@
       </template>
     </div>
     <p class="empty" x-show="!loose.length" x-text="t('empty')"></p>
-    <div class="pager" x-show="pages() > 1">
-      <button @click="goPage(page-1)" :disabled="page<=1" x-html="svg('back')"></button>
-      <span x-text="page + ' / ' + pages()"></span>
-      <button @click="goPage(page+1)" :disabled="page>=pages()" x-html="svg('back')" style="transform:rotate(180deg)"></button>
+    <div class="load-sentinel" x-show="hasMore()" x-intersect.margin.400px="loadMore()">
+      <span class="load-spin" x-show="loadingMore"></span>
     </div>
   </main>
 
   <div class="lightbox" x-show="lightbox" @click="lightbox=null" @keydown.window.escape="lightbox=null" style="display:none">
-    <img :src="lightbox ? streamURL(lightbox) : ''" :alt="lightbox?.title" @click.stop
-         @load="lbW=$event.target.naturalWidth; lbH=$event.target.naturalHeight">
+    <img :src="lightbox ? streamURL(lightbox) : ''" :alt="lightbox?.title"
+         :style="`transform: scale(${lbZoom}); cursor: ${lbZoom!==1?'grab':'zoom-in'}`"
+         @click.stop="lbZoom = lbZoom!==1 ? 1 : 2"
+         @dblclick.stop="lbZoom=1"
+         @wheel.prevent.stop="lbZoom = Math.min(6, Math.max(0.3, Math.round((lbZoom + ($event.deltaY<0?0.2:-0.2))*10)/10))">
+    <div class="lb-zoom" x-show="!lbInfo" @click.stop>
+      <button @click="lbZoom = Math.max(0.3, Math.round((lbZoom-0.2)*10)/10)" title="−" x-html="svg('minus')"></button>
+      <span x-text="Math.round(lbZoom*100) + '%'"></span>
+      <button @click="lbZoom = Math.min(6, Math.round((lbZoom+0.2)*10)/10)" title="+" x-html="svg('plus')"></button>
+    </div>
     <button class="lb-close" @click="lightbox=null" x-html="svg('close')"></button>
     <button class="lb-info-btn" @click.stop="lbInfo=!lbInfo" :class="{active: lbInfo}" x-html="svg('info')"></button>
     <dl class="lb-info facts" x-show="lightbox && lbInfo" @click.stop>
@@ -309,8 +324,8 @@
               <div class="stack">
                 <span class="badge" x-text="g.items.length"></span>
                 <div class="case">
-                  <div class="art" :style="artStyle(g.items[0])"></div>
-                  <template x-if="!g.items[0] || !g.items[0].has_cover">
+                  <div class="art" :style="artStyle(groupPoster(g))"></div>
+                  <template x-if="!groupPoster(g) || !(groupPoster(g).has_cover || groupPoster(g).cover_id)">
                     <div class="fallback"><span class="fb-ic" x-html="mediaIcon()"></span><span class="fb-ttl" x-text="g.name"></span></div>
                   </template>
                 </div>
@@ -341,10 +356,8 @@
       </div>
     </template>
 
-    <div class="pager" x-show="pages() > 1" style="display:none">
-      <button class="pg-btn" @click="goPage(page - 1)" :disabled="page <= 1" x-html="svg('back')"></button>
-      <span class="pg-info"><span x-text="page"></span> / <span x-text="pages()"></span></span>
-      <button class="pg-btn pg-next" @click="goPage(page + 1)" :disabled="page >= pages()" x-html="svg('back')"></button>
+    <div class="load-sentinel" x-show="hasMore()" x-intersect.margin.400px="loadMore()">
+      <span class="load-spin" x-show="loadingMore"></span>
     </div>
 
     <p class="empty" x-show="loose.length === 0 && groups.length === 0" x-text="t('empty')"></p>
@@ -996,15 +1009,16 @@
 
   <!-- Gobby chat: floating bubble + panel (settings if not configured) -->
   <div class="gchat">
-    <button class="gchat-bubble" :class="{open: chatOpen}" @click="toggleChat()" :title="t('chatTitle')">
+    <button class="gchat-bubble" :class="{open: chatOpen, thinking: chatBusy && !chatOpen}" @click="toggleChat()" :title="chatBusy ? t('chatThinking') : t('chatTitle')">
       <span x-html="svg(chatOpen ? 'close' : 'chat')"></span>
+      <span class="gchat-bubble-dot" x-show="chatBusy && !chatOpen"></span>
     </button>
     <div class="gchat-panel" x-show="chatOpen" x-transition style="display:none">
       <div class="gchat-head">
-        <span class="gchat-logo"></span>
-        <span class="gchat-name" x-text="chatView==='config' ? t('settings') : 'Gobby'"></span>
+        <span class="gchat-name" x-text="chatView==='config' ? t('settings') : (activeModelName() || 'Gobby')"></span>
         <span class="gchat-spacer"></span>
-        <button class="gchat-cfg-btn" x-show="chatView==='chat' && chatMsgs.length" @click="chatMsgs=[]" :title="t('chatClear')" x-html="svg('trash')"></button>
+        <button class="gchat-cfg-btn" x-show="chatView==='chat'" :class="{active: chatSpeak}" @click="chatSpeak=!chatSpeak; if(!chatSpeak && window.speechSynthesis) speechSynthesis.cancel()" :title="chatSpeak ? t('chatVoiceOn') : t('chatVoiceOff')" x-html="svg(chatSpeak ? 'volume' : 'volumeOff')"></button>
+        <button class="gchat-cfg-btn" x-show="chatView==='chat' && chatMsgs.length" @click="clearChat()" :title="t('chatClear')" x-html="svg('trash')"></button>
         <button class="gchat-cfg-btn" :class="{active: chatView==='config'}" @click="chatView = chatView==='config' ? 'chat' : 'config'" :title="t('settings')" x-html="svg('gear')"></button>
       </div>
 
@@ -1036,39 +1050,92 @@
           <label x-text="t('name')"></label>
           <input x-model="chatCfg.name" :placeholder="t('chatCfgCustom')">
           <label>URL</label>
-          <input x-model="chatCfg.base_url" placeholder="http://localhost:11434/v1">
+          <input x-model="chatCfg.base_url" @input="chatConnOK=false" placeholder="http://localhost:11434/v1">
+          <label x-text="t('chatCfgKey')"></label>
+          <input type="password" x-model="chatCfg.key" @input="chatConnOK=false" :placeholder="chatCfg.keySet ? '••••••••' : t('chatCfgKeyOptional')" autocomplete="off">
+          <p class="gchat-cfg-hint" x-show="chatCfg.keySet"><span x-html="svg('check')"></span> <span x-text="t('chatCfgKeyKept')"></span></p>
           <label x-text="t('chatCfgModel')"></label>
           <div class="gchat-model-row">
-            <input x-model="chatCfg.model" placeholder="llama3.1">
-            <button type="button" class="icon-sm" :class="{spin: modelsBusy}" @click="loadModels()" :disabled="!chatCfg.base_url || modelsBusy" :title="t('chatCfgLoad')" x-html="svg('refresh')"></button>
+            <input x-model="chatCfg.model" @input="chatConnOK=false" placeholder="llama3.1" readonly @click="testAndPickModel()">
+            <button type="button" class="icon-sm" :class="{spin: modelsBusy}" @click="testAndPickModel()" :disabled="!chatCfg.base_url || modelsBusy" :title="t('chatCfgLoad')" x-html="svg('refresh')"></button>
           </div>
-          <select class="gchat-model-select" x-show="chatModels.length" x-model="chatCfg.model" size="6">
-            <template x-for="m in chatModels" :key="m"><option :value="m" x-text="m"></option></template>
-          </select>
           <p class="gchat-model-status" x-show="modelsMsg" :class="{err: modelsErr}" x-text="modelsMsg"></p>
-          <label x-text="t('chatCfgKey')"></label>
-          <input type="password" x-model="chatCfg.key" :placeholder="chatCfg.keySet ? '••••••••' : t('chatCfgKeyOptional')" autocomplete="off">
-          <p class="gchat-cfg-hint" x-show="chatCfg.keySet"><span x-html="svg('check')"></span> <span x-text="t('chatCfgKeyKept')"></span></p>
-          <p class="gchat-cfg-hint"><span x-html="svg('info')"></span> <span x-text="t('chatCfgToolsHint')"></span></p>
+          <label class="gchat-toggle">
+            <input type="checkbox" x-model="chatCfg.think">
+            <span x-text="t('chatThink')"></span>
+          </label>
           <div class="prov-form-btns">
-            <button type="button" class="icon-btn2" @click="editing=false" :title="t('cancel')" x-html="svg('close')"></button>
-            <button type="button" class="icon-btn2 primary" @click="saveProvider()" :title="t('save')"><span x-html="svg('check')"></span> <span x-text="t('save')"></span></button>
+            <button type="button" class="icon-btn2" @click="editing=false; modelPickOpen=false" :title="t('cancel')" x-html="svg('close')"></button>
+            <button type="button" class="icon-btn2 primary" @click="saveProvider()" :disabled="!chatConnOK" :title="chatConnOK ? t('save') : t('chatCfgMustConnect')" x-html="svg('save')"></button>
           </div>
         </div>
 
         <p class="gchat-cfg-key" x-show="envKey"><span x-html="svg('info')"></span> <span x-text="t('chatCfgKeyEnvActive')"></span></p>
       </div>
 
+      <div class="gchat-modelpick" x-show="modelPickOpen" x-transition @click="modelPickOpen=false" style="display:none">
+        <div class="gchat-modelpick-box" @click.stop>
+          <input class="gchat-modelpick-search" x-ref="modelSearch" x-model="modelQuery" :placeholder="t('search')">
+          <div class="gchat-modelpick-list">
+            <template x-for="m in filteredModels()" :key="m">
+              <button type="button" class="gchat-modelpick-item" :class="{active: m===chatCfg.model}" @click.stop="pickModel(m)" x-text="m"></button>
+            </template>
+            <p class="gchat-model-status" x-show="!filteredModels().length" x-text="modelsMsg || '—'"></p>
+          </div>
+          <button type="button" class="icon-btn2" @click="modelPickOpen=false" :title="t('cancel')" x-html="svg('close')"></button>
+        </div>
+      </div>
+
       <template x-if="chatView==='chat'">
         <div style="display:contents">
           <div class="gchat-log" x-ref="chatLog">
             <template x-if="!chatMsgs.length">
-              <div class="gchat-hint" x-text="t('chatHint')"></div>
+              <div class="gchat-empty">
+                <span class="gchat-empty-logo"></span>
+                <div class="gchat-hint" x-text="t('chatHint')"></div>
+                <div class="gchat-suggests">
+                  <template x-for="s in chatSuggests()" :key="s">
+                    <button type="button" class="gchat-suggest" @click="useSuggest(s)" x-text="s"></button>
+                  </template>
+                </div>
+              </div>
             </template>
             <template x-for="(m, i) in chatMsgs" :key="i">
-              <div class="gchat-msg" :class="m.role" x-text="m.text"></div>
+              <div class="gchat-row" :class="m.role">
+                <template x-if="m.tools && m.tools.length">
+                  <div class="gchat-tools">
+                    <template x-for="(tl, j) in m.tools" :key="j"><span class="gchat-tool" x-text="tl"></span></template>
+                  </div>
+                </template>
+                <template x-if="m.reasoning">
+                  <div class="gchat-reason">
+                    <button type="button" class="gchat-reason-toggle" @click="m.showReason=!m.showReason">
+                      <span x-html="svg('brain')"></span> <span x-text="t('chatReason')"></span>
+                      <span class="gchat-reason-caret" :class="{open: m.showReason}">▸</span>
+                    </button>
+                    <div class="gchat-reason-body" x-show="m.showReason" x-text="m.reasoning"></div>
+                  </div>
+                </template>
+                <div class="gchat-msg" :class="m.role">
+                  <span x-show="m.role==='gobby'" x-html="mdChat(m.text)"></span>
+                  <span x-show="m.role!=='gobby'" x-text="m.text"></span>
+                </div>
+                <template x-if="m.cards && m.cards.length">
+                  <div class="gchat-cards">
+                    <template x-for="c in m.cards" :key="c.id">
+                      <button type="button" class="gchat-card" @click="chatPlay(c.id)">
+                        <span class="gchat-card-cover" :style="`background-image:url(${chatCardCover(c)})`"></span>
+                        <span class="gchat-card-info">
+                          <span class="gchat-card-title" x-text="c.title"></span>
+                          <span class="gchat-card-meta" x-text="[c.section, c.year || ''].filter(Boolean).join(' · ')"></span>
+                        </span>
+                      </button>
+                    </template>
+                  </div>
+                </template>
+              </div>
             </template>
-            <div class="gchat-msg gobby" x-show="chatBusy"><span class="gchat-typing"><i></i><i></i><i></i></span></div>
+            <div class="gchat-msg gobby" x-show="chatBusy" style="align-self:flex-start"><span class="gchat-typing"><i></i><i></i><i></i></span></div>
           </div>
           <form class="gchat-input" @submit.prevent="sendChat()">
             <input x-ref="chatInput" x-model="chatInput" :placeholder="t('chatPlaceholder')" :disabled="chatBusy">

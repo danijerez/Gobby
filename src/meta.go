@@ -150,7 +150,8 @@ var (
 	reBrackets  = regexp.MustCompile(`\[[^\]]*\]|\([^)]*\)`)
 	reSpaces    = regexp.MustCompile(`\s{2,}`)
 	reGluedRes  = regexp.MustCompile(`(?i)\d?[mp]\s?(1080|720|480)p?$`)
-	reLooseEp   = regexp.MustCompile(`(?i)(?:cap[ií]tulo|cap|episodio|epis|ep)[\s.]*(\d{1,4})`)
+	reLooseEp   = regexp.MustCompile(`(?i)(?:cap[ií]tulo|cap|episodio|episode|epis|ep|e)[\s._-]*(\d{1,4})`)
+	reTailNum   = regexp.MustCompile(`(?:^|[\s._-])(\d{1,3})\s*$`)
 	reSeasonNum = regexp.MustCompile(`(?i)\b(?:season|temporada|libro|book|s|t)\s*(\d{1,2})\b`)
 
 	techWord = regexp.MustCompile(`(?i)^(` +
@@ -190,6 +191,8 @@ func parseName(path string) Parsed {
 		}
 
 		if m := reLooseEp.FindStringSubmatch(base); m != nil {
+			p.Episode, _ = strconv.Atoi(m[1])
+		} else if m := reTailNum.FindStringSubmatch(base); m != nil {
 			p.Episode, _ = strconv.Atoi(m[1])
 		} else if m := reLooseEp.FindStringSubmatch(filepath.Base(filepath.Dir(path))); m != nil {
 			p.Episode, _ = strconv.Atoi(m[1])

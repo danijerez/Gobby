@@ -16,7 +16,7 @@ import (
 	"github.com/mdp/qrterminal/v3"
 )
 
-var version = "0.4.0"
+var version = "0.5.0"
 
 var (
 	flagPath    = flag.String("p", envOr("GOBBY_PATH", ""), "carpeta a escanear (por defecto: junto al binario)")
@@ -36,6 +36,8 @@ func main() {
 	flag.Parse()
 
 	version = strings.TrimPrefix(version, "v")
+
+	cleanupOldBinary()
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -74,6 +76,7 @@ func main() {
 			slog.Warn("scan error", "err", err)
 			return
 		}
+		backfillEpisodes(db, root)
 		pending, err := pendingEnrichmentCount(db, libraryKey)
 		if err != nil {
 			slog.Warn("could not inspect pending enrichment", "err", err)

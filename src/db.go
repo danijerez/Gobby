@@ -398,6 +398,35 @@ func backfillGenres(db *sql.DB) {
 	}
 }
 
+func backfillEpisodes(db *sql.DB, root string) {
+	rows, err := db.Query(`SELECT id, rel_path FROM items WHERE section='series' AND episode=0 AND scan_state='present'`)
+	if err != nil {
+		return
+	}
+	type upd struct {
+		id     int64
+		season int
+		ep     int
+		title  string
+	}
+	var updates []upd
+	for rows.Next() {
+		var id int64
+		var rel string
+		if rows.Scan(&id, &rel) != nil {
+			continue
+		}
+		p := parseName(filepath.Join(root, filepath.FromSlash(rel)))
+		if p.Episode > 0 {
+			updates = append(updates, upd{id, p.Season, p.Episode, p.Title})
+		}
+	}
+	rows.Close()
+	for _, u := range updates {
+		db.Exec(`UPDATE items SET season=?, episode=?, title=? WHERE id=? AND episode=0`, u.season, u.ep, u.title, u.id)
+	}
+}
+
 func facets(db *sql.DB, libraryKey string) (genres, colors []string, yearMin, yearMax int) {
 	seen := map[string]bool{}
 	rows, err := db.Query(`SELECT DISTINCT genre FROM items WHERE library_key=? AND scan_state='present' AND genre<>''`, libraryKey)
@@ -583,15 +612,21 @@ func isImageExt(path string) bool {
 
 func listItems(db *sql.DB, libraryKey, kind, q string) ([]Item, error) {
 	rows, err := db.Query(`
-		SELECT id, kind, rel_path, COALESCE(size,0), COALESCE(modtime,0), section, section_source, scan_state, enrich_state,
-		       COALESCE(title,''), COALESCE(artist,''), COALESCE(album,''),
-		       COALESCE(year,0), COALESCE(genre,''), COALESCE(duration,0),
-		       COALESCE(season,0), COALESCE(episode,0),
-		       (cover IS NOT NULL), COALESCE(notes,''), COALESCE(rating,0), COALESCE(progress,0), COALESCE(color,'')
-		FROM items
-		WHERE library_key=? AND scan_state='present' AND (?='' OR kind=?)
-		  AND (?='' OR title LIKE '%'||?||'%' OR artist LIKE '%'||?||'%' OR album LIKE '%'||?||'%')
-		ORDER BY album, season, episode, title`,
+		SELECT i.id, i.kind, i.rel_path, COALESCE(i.size,0), COALESCE(i.modtime,0), i.section, i.section_source, i.scan_state, i.enrich_state,
+		       COALESCE(i.title,''), COALESCE(i.artist,''), COALESCE(i.album,''),
+		       COALESCE(i.year,0), COALESCE(i.genre,''), COALESCE(i.duration,0),
+		       COALESCE(i.season,0), COALESCE(i.episode,0),
+		       (i.cover IS NOT NULL), COALESCE(i.notes,''), COALESCE(i.rating,0), COALESCE(i.progress,0), COALESCE(i.color,''),
+		       COALESCE((
+		         CASE WHEN i.cover IS NOT NULL THEN i.id
+		         WHEN i.album<>'' THEN (SELECT s.id FROM items s
+		           WHERE s.library_key=i.library_key AND s.album=i.album AND s.kind=i.kind
+		             AND s.cover IS NOT NULL LIMIT 1)
+		         END), 0)
+		FROM items i
+		WHERE i.library_key=? AND i.scan_state='present' AND (?='' OR i.kind=?)
+		  AND (?='' OR i.title LIKE '%'||?||'%' OR i.artist LIKE '%'||?||'%' OR i.album LIKE '%'||?||'%')
+		ORDER BY i.album, i.season, i.episode, i.title`,
 		libraryKey, kind, kind, q, q, q, q)
 	if err != nil {
 		return nil, err
@@ -601,10 +636,15 @@ func listItems(db *sql.DB, libraryKey, kind, q string) ([]Item, error) {
 	var out []Item
 	for rows.Next() {
 		var it Item
+		var coverID int64
 		if err := rows.Scan(&it.ID, &it.Kind, &it.RelPath, &it.Size, &it.ModTime, &it.Section, &it.SectionSource, &it.State, &it.EnrichState,
 			&it.Title, &it.Artist, &it.Album, &it.Year, &it.Genre, &it.Duration,
-			&it.Season, &it.Episode, &it.HasCover, &it.Notes, &it.Rating, &it.Progress, &it.Color); err != nil {
+			&it.Season, &it.Episode, &it.HasCover, &it.Notes, &it.Rating, &it.Progress, &it.Color, &coverID); err != nil {
 			return nil, err
+		}
+		it.CoverID = coverID
+		if coverID != 0 {
+			it.HasCover = true
 		}
 		out = append(out, it)
 	}
@@ -727,6 +767,17 @@ func getItem(db *sql.DB, libraryKey string, id int64) (Item, error) {
 		var m Meta
 		if json.Unmarshal([]byte(metaJSON.String), &m) == nil {
 			it.Meta = &m
+		}
+	}
+	if it.HasCover {
+		it.CoverID = it.ID
+	} else if it.Album != "" {
+		var cid int64
+		db.QueryRow(`SELECT id FROM items WHERE library_key=? AND kind=? AND album=? AND cover IS NOT NULL AND scan_state='present' LIMIT 1`,
+			libraryKey, it.Kind, it.Album).Scan(&cid)
+		if cid != 0 {
+			it.CoverID = cid
+			it.HasCover = true
 		}
 	}
 	return it, nil
@@ -982,7 +1033,7 @@ func searchAll(db *sql.DB, libraryKey, q string, limit int) ([]SearchResult, err
 		} else {
 			out = append(out, SearchResult{Item: it})
 		}
-		if len(out) >= limit {
+		if limit > 0 && len(out) >= limit {
 			break
 		}
 	}
@@ -1092,8 +1143,16 @@ func sortTree(n *TreeNode) {
 
 func coverOf(db *sql.DB, libraryKey string, id int64) ([]byte, error) {
 	var b []byte
-	err := db.QueryRow(`SELECT cover FROM items WHERE id=? AND library_key=? AND scan_state='present'`, id, libraryKey).Scan(&b)
-	return b, err
+	var kind, album string
+	err := db.QueryRow(`SELECT cover, kind, album FROM items WHERE id=? AND library_key=? AND scan_state='present'`, id, libraryKey).Scan(&b, &kind, &album)
+	if err != nil {
+		return b, err
+	}
+	if len(b) == 0 && album != "" {
+		db.QueryRow(`SELECT cover FROM items WHERE library_key=? AND kind=? AND album=? AND cover IS NOT NULL AND length(cover)>0 AND scan_state='present' LIMIT 1`,
+			libraryKey, kind, album).Scan(&b)
+	}
+	return b, nil
 }
 
 func setCover(db *sql.DB, libraryKey string, id int64, cover []byte) error {

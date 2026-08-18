@@ -11,7 +11,7 @@
     <img alt="Alpine.js" src="https://img.shields.io/badge/Alpine.js-8BC0D0?logo=alpinedotjs&logoColor=black">
     <img alt="MCP" src="https://img.shields.io/badge/MCP-server-6E56CF">
     <img alt="Cloudflare" src="https://img.shields.io/badge/Cloudflare-Tunnel-F38020?logo=cloudflare&logoColor=white">
-    <img alt="version" src="https://img.shields.io/badge/version-0.4.0-2ea44f">
+    <img alt="version" src="https://img.shields.io/badge/version-0.5.0-2ea44f">
     <img alt="license" src="https://img.shields.io/badge/code-MIT-blue">
     <img alt="release binary" src="https://img.shields.io/badge/release%20binary-GPLv3-orange">
   </p>
@@ -91,12 +91,19 @@ Luego abre el enlace que Gobby imprime, o escanea el QR desde tu móvil. Misma c
 
 Una burbuja de chat en la esquina: pregúntale a Gobby por tu biblioteca en lenguaje
 natural ("¿qué pelis de acción no he visto?") — también por voz — y usa sus propias
-herramientas para responder, hablando como un elfo doméstico tímido.
+herramientas para responder, hablando como un elfo doméstico tímido. No solo
+responde: pídele que **reproduzca** algo ("pon el primer episodio de X") y lo busca
+y lo arranca en el reproductor, o añade títulos a tu lista. Las respuestas mantienen
+el contexto de la conversación, muestran qué herramientas usó y ofrecen tarjetas con
+carátula que se reproducen al tocarlas.
 
 Apúntalo a cualquier endpoint **compatible con OpenAI** — Ollama, LM Studio, OpenAI,
 Gemini, Groq, o una pasarela como LiteLLM / OpenRouter / OmniRoute. Se configura en
-los ajustes de la burbuja: eliges un preset, cargas la lista de modelos (prueba la
-conexión), guardas. Puedes tener **varios proveedores** y cambiar con un clic.
+los ajustes de la burbuja: eliges un preset, cargas la lista de modelos (que además
+prueba la conexión — no puedes guardar hasta que conecta), eliges un modelo de una
+lista con búsqueda, guardas. Puedes tener **varios proveedores** y cambiar con un
+clic, apagar el "pensamiento" lento de un modelo por proveedor, y leer su
+razonamiento en una nota desplegable.
 
 Las claves API se guardan por proveedor pero **nunca salen del equipo**: se ocultan
 en cada respuesta y se excluyen del exportado de la base de datos. La variable de

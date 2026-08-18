@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -178,3 +179,22 @@ func applyUpdate(ctx context.Context, current string) error {
 }
 
 const updateTimeout = 60 * time.Second
+
+func cleanupOldBinary() {
+	self, err := os.Executable()
+	if err != nil {
+		return
+	}
+	_ = os.Remove(self + ".old")
+}
+
+func relaunchSelf() error {
+	self, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command(self, os.Args[1:]...)
+	cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
+	cmd.Dir, _ = os.Getwd()
+	return cmd.Start()
+}
