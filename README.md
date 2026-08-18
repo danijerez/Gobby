@@ -91,11 +91,10 @@ Then open the link Gobby prints, or scan the QR from your phone. Same house, sam
 
 A chat bubble sits in the corner: ask Gobby about your library in plain language
 ("what action films haven't I watched?") — by voice too — and he uses his own
-tools to answer, speaking like a shy house-elf. He doesn't just answer: ask him
-to **play** something ("put on the first episode of X") and he finds it and
-starts it in the player, or adds titles to your watchlist. Replies keep context
-across the conversation, show which tools he used, and offer clickable poster
-cards that play on tap.
+tools to answer, speaking like a shy house-elf. Beyond looking things up he can
+also act: **open** an item you ask for, or add a title to your watchlist. Replies
+keep context across the conversation, show which tools he used, and offer
+clickable result cards.
 
 Point it at any **OpenAI-compatible** endpoint — Ollama, LM Studio, OpenAI,
 Gemini, Groq, or a gateway like LiteLLM / OpenRouter / OmniRoute. Configure it

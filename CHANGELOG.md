@@ -6,9 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/); versions follow
 ## [0.5.0]
 
 ### Added
-- **Gobby can act, not just answer.** The chat gained action tools: play/open an
-  item, list a series' episodes to pick a specific one, and add to the watchlist.
-  Asking "play the first episode of X" now actually starts it in the player.
+- **Gobby can act, not just answer.** The chat gained action tools: open an item
+  in the player and add a title to the watchlist, on top of searching and browsing.
 - **Conversation memory** — the chat keeps context across turns (server-side
   session), survives a page refresh, and shows which tools Gobby used per reply.
 - **Result cards** — searches in the chat show clickable poster cards that play

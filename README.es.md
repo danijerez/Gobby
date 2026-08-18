@@ -91,11 +91,10 @@ Luego abre el enlace que Gobby imprime, o escanea el QR desde tu móvil. Misma c
 
 Una burbuja de chat en la esquina: pregúntale a Gobby por tu biblioteca en lenguaje
 natural ("¿qué pelis de acción no he visto?") — también por voz — y usa sus propias
-herramientas para responder, hablando como un elfo doméstico tímido. No solo
-responde: pídele que **reproduzca** algo ("pon el primer episodio de X") y lo busca
-y lo arranca en el reproductor, o añade títulos a tu lista. Las respuestas mantienen
-el contexto de la conversación, muestran qué herramientas usó y ofrecen tarjetas con
-carátula que se reproducen al tocarlas.
+herramientas para responder, hablando como un elfo doméstico tímido. Además de
+buscar, también puede actuar: **abrir** un elemento que le pidas, o añadir un
+título a tu lista. Las respuestas mantienen el contexto de la conversación,
+muestran qué herramientas usó y ofrecen tarjetas de resultado con carátula.
 
 Apúntalo a cualquier endpoint **compatible con OpenAI** — Ollama, LM Studio, OpenAI,
 Gemini, Groq, o una pasarela como LiteLLM / OpenRouter / OmniRoute. Se configura en
