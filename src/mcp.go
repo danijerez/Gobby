@@ -55,7 +55,7 @@ func mcpHandler(db *sql.DB, version, root, libraryKey, uiBase string) http.Handl
 		Name:        "add_to_watchlist",
 		Description: "Add something to watch/listen/read later. Pass poster and year (from search_titles) when you have them so the entry shows a cover.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in watchInput) (*mcp.CallToolResult, any, error) {
-		err := addWatch(db, in.Kind, in.Title, in.Note, in.Poster, in.Year)
+		_, err := addWatch(db, in.Kind, in.Title, in.Note, in.Poster, in.Year, "")
 		return jsonResult(map[string]string{"status": "ok"}, err)
 	})
 

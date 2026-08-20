@@ -657,14 +657,33 @@
       <form class="watch-search" @submit.prevent="wresults.length ? pickWatch(wresults[0]) : addManual()">
         <span class="search-ic" x-html="svg('search')"></span>
         <input x-model="wq" @input.debounce.400ms="searchWatch()" :placeholder="t('watchSearchPlaceholder')">
+        <button type="button" class="scan-btn" x-show="scanSupported" @click="scanBarcode()" :title="t('scan')" x-html="svg('scan')"></button>
       </form>
       <div class="watch-types">
+        <button type="button" class="wt-chip" :class="{on: ownedOnly}" @click="ownedOnly = !ownedOnly" :title="t('collectionOnly')">
+          <span x-html="svg('box')"></span> <span x-text="t('collection')"></span>
+        </button>
         <template x-for="k in allWatchKinds" :key="k">
           <button type="button" class="wt-chip" :class="{on: kindOn(k), noapi: !onlineKinds.includes(k)}"
                   @click="toggleKind(k)" :title="onlineKinds.includes(k) ? '' : t('manualOnly')">
             <span x-html="watchIcon(k)"></span> <span x-text="t(k)"></span>
           </button>
         </template>
+      </div>
+    </div>
+
+    <div class="scan-overlay" x-show="scanning" @click.self="closeScan()" style="display:none">
+      <div class="scan-box">
+        <button class="scan-close" @click="closeScan()" x-html="svg('close')"></button>
+        <template x-if="!scanError && !scanMsg">
+          <div class="scan-frame">
+            <video x-ref="scanVideo" playsinline muted></video>
+            <div class="scan-line"></div>
+            <p class="scan-hint" x-text="t('scanHint')"></p>
+          </div>
+        </template>
+        <p class="scan-err" x-show="scanError" x-text="scanError"></p>
+        <p class="scan-ok" x-show="scanMsg" x-text="scanMsg"></p>
       </div>
     </div>
 
@@ -695,16 +714,17 @@
 
     <div class="grid" x-show="watch.length">
       <template x-for="w in filteredWatch()" :key="w.id">
-        <div class="item" :class="{'watch-done': w.done}" tabindex="0" role="button" @click="openWatch(w)" @keydown.enter.prevent="openWatch(w)">
+        <div class="item" :class="{'watch-done': w.done, 'watch-ghost': (!w.poster && !w.url) || w.owned}" tabindex="0" role="button" @click="openWatch(w)" @keydown.enter.prevent="openWatch(w)">
           <div class="case">
             <div class="art" :style="w.poster ? `background-image:url(${w.poster})` : 'display:none'"></div>
             <template x-if="!w.poster">
               <div class="fallback"><span class="fb-ic" x-html="watchIcon(w.kind)"></span><span class="fb-ttl" x-text="w.title"></span></div>
             </template>
             <span class="watch-check" x-show="w.done" x-html="svg('star')"></span>
+            <span class="owned-badge" x-show="w.owned" :title="t('owned')" x-html="svg('box')"></span>
             <span class="kind-badge"><span x-html="watchIcon(w.kind)"></span> <span x-text="t(w.kind || 'other')"></span></span>
           </div>
-          <div class="meta"><div class="m-ttl" x-text="w.title"></div><div class="m-sub" x-text="[t(w.kind), w.year].filter(Boolean).join(' · ')"></div></div>
+          <div class="meta"><div class="m-ttl" x-text="w.title"></div><div class="m-sub" x-text="[t(w.kind), w.year, w.url && hostOf(w.url)].filter(Boolean).join(' · ')"></div></div>
         </div>
       </template>
     </div>
@@ -726,9 +746,16 @@
             <input type="file" x-ref="wcover" accept="image/*" style="display:none" @change="uploadWatchCover(w, $event)">
           </div>
           <div class="actions">
-            <button class="action primary" @click="toggle(w); w.done = !w.done">
+            <a class="action primary" x-show="w.url" :href="w.url" target="_blank" rel="noopener">
+              <span x-html="svg('external')"></span> <span x-text="t('goToLink')"></span>
+            </a>
+            <button class="action primary" x-show="!w.url" @click="toggle(w); w.done = !w.done">
               <span x-html="svg(w.done ? 'refresh' : 'star')"></span>
               <span x-text="w.done ? t('markUndone') : t('markDone')"></span>
+            </button>
+            <button class="action owner-only" x-show="w.kind !== 'link'" :class="{on: w.owned}" @click="toggleOwned(w)">
+              <span x-html="svg('box')"></span>
+              <span x-text="w.owned ? t('ownedYes') : t('markOwned')"></span>
             </button>
             <button class="action owner-only" @click="delWatch(w); back()"><span x-html="svg('trash')"></span> <span x-text="t('remove')"></span></button>
           </div>
@@ -748,7 +775,12 @@
           <div class="wfields">
             <div class="wfields-head owner-only">
               <span class="field-label"><span x-html="svg('layers')"></span> <span x-text="t('customFields')"></span></span>
-              <button class="wfield-add" @click="addWatchField(w)"><span x-html="svg('plus')"></span> <span x-text="t('addField')"></span></button>
+              <div class="wfield-presets">
+                <button class="wfield-add" @click="addPresetField(w, 'location')"><span x-html="svg('plus')"></span> <span x-text="t('location')"></span></button>
+                <button class="wfield-add" @click="addPresetField(w, 'format')"><span x-html="svg('plus')"></span> <span x-text="t('format')"></span></button>
+                <button class="wfield-add" @click="addPresetField(w, 'condition')"><span x-html="svg('plus')"></span> <span x-text="t('condition')"></span></button>
+                <button class="wfield-add" @click="addWatchField(w)"><span x-html="svg('plus')"></span> <span x-text="t('addField')"></span></button>
+              </div>
             </div>
             <template x-for="(fld, i) in (w.fields || [])" :key="i">
               <div class="wfield">

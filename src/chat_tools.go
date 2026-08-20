@@ -132,7 +132,7 @@ func runChatTool(db *sql.DB, libraryKey, uiBase, name, argsJSON string) (string,
 		items, err := listWatch(db)
 		return out(jsonOut(items, err))
 	case "add_to_watchlist":
-		err := addWatch(db, getStr("kind"), getStr("title"), getStr("note"), "", "")
+		_, err := addWatch(db, getStr("kind"), getStr("title"), getStr("note"), "", "", "")
 		return out(jsonOut(map[string]string{"status": "added"}, err))
 	case "recent_media":
 		cont, _ := homeShelf(db, libraryKey, "last_opened>0 AND kind<>'file'", "last_opened DESC", 10)

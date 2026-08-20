@@ -15,7 +15,8 @@ COPY --from=build /gobby /usr/local/bin/gobby
 # /media = your library (mount read-only). /data = gobby.db (persistent volume).
 ENV GOBBY_PATH=/media \
     GOBBY_DATA=/data \
-    GOBBY_PORT=8420
+    GOBBY_PORT=8420 \
+    GOBBY_NO_BROWSER=1
 VOLUME ["/data"]
 EXPOSE 8420
 

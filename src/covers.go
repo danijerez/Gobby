@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -123,6 +124,26 @@ func cinemetaMetaFull(kind, imdbID string) (Meta, string, error) {
 	}, res.Meta.Poster, nil
 }
 
+func enrichWatchHit(kind, extID string) (note, poster string, fields []WatchField) {
+	if extID == "" || (kind != "movie" && kind != "series") {
+		return "", "", nil
+	}
+	m, p, err := cinemetaMetaFull(kind, extID)
+	if err != nil {
+		return "", "", nil
+	}
+	add := func(k, v string) {
+		if v != "" {
+			fields = append(fields, WatchField{K: k, V: v})
+		}
+	}
+	add("Duración", m.Runtime)
+	add("Géneros", strings.Join(m.Genres, ", "))
+	add("IMDb", m.ImdbRating)
+	add("Dirección", strings.Join(m.Director, ", "))
+	return m.Description, p, fields
+}
+
 func itunesPoster(media, term string) (poster string, err error) {
 	var res struct {
 		Results []struct {
@@ -170,6 +191,86 @@ type SearchHit struct {
 	Year   string `json:"year"`
 	Poster string `json:"poster"`
 	ExtID  string `json:"ext_id"`
+}
+
+type EANHit struct {
+	Title  string `json:"title"`
+	Poster string `json:"poster"`
+	Kind   string `json:"kind"`
+	Found  bool   `json:"found"`
+}
+
+func lookupEAN(code string) EANHit {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return EANHit{}
+	}
+	if strings.HasPrefix(code, "978") || strings.HasPrefix(code, "979") {
+		if h, ok := openLibraryByISBN(code); ok {
+			return h
+		}
+	}
+	return upcItemDB(code)
+}
+
+func openLibraryByISBN(isbn string) (EANHit, bool) {
+	var res struct {
+		Title  string `json:"title"`
+		Covers []int  `json:"covers"`
+	}
+	u := "https://openlibrary.org/isbn/" + url.QueryEscape(isbn) + ".json"
+	if err := getJSON(u, &res); err != nil || res.Title == "" {
+		return EANHit{}, false
+	}
+	poster := ""
+	if len(res.Covers) > 0 && res.Covers[0] > 0 {
+		poster = fmt.Sprintf("https://covers.openlibrary.org/b/id/%d-L.jpg", res.Covers[0])
+	}
+	return EANHit{Title: res.Title, Poster: poster, Kind: "book", Found: true}, true
+}
+
+func upcItemDB(code string) EANHit {
+	var res struct {
+		Items []struct {
+			Title  string   `json:"title"`
+			Images []string `json:"images"`
+		} `json:"items"`
+	}
+	u := "https://api.upcitemdb.com/prod/trial/lookup?upc=" + url.QueryEscape(code)
+	if err := getJSON(u, &res); err != nil || len(res.Items) == 0 {
+		return EANHit{}
+	}
+	it := res.Items[0]
+	poster := ""
+	if len(it.Images) > 0 {
+		poster = it.Images[0]
+	}
+	kind := guessKind(it.Title)
+	title := it.Title
+	if kind == "movie" || kind == "series" {
+		title = cleanEANTitle(title)
+	}
+	return EANHit{Title: title, Poster: poster, Kind: kind, Found: it.Title != ""}
+}
+
+var reEANFormat = regexp.MustCompile(`(?i)\s*[\(\[](blu-?ray|dvd|4k|uhd|ultra hd|steelbook|combo|digital|region [a-z0-9]+)[^\)\]]*[\)\]]`)
+
+func cleanEANTitle(t string) string {
+	t = reEANFormat.ReplaceAllString(t, "")
+	return strings.TrimSpace(t)
+}
+
+func guessKind(title string) string {
+	t := strings.ToLower(title)
+	switch {
+	case strings.Contains(t, "blu-ray") || strings.Contains(t, "blu ray") || strings.Contains(t, "dvd") || strings.Contains(t, "4k") || strings.Contains(t, "uhd"):
+		return "movie"
+	case strings.Contains(t, "ps5") || strings.Contains(t, "ps4") || strings.Contains(t, "xbox") || strings.Contains(t, "nintendo") || strings.Contains(t, "switch"):
+		return "game"
+	case strings.Contains(t, "vinyl") || strings.Contains(t, "cd") || strings.Contains(t, "lp"):
+		return "audio"
+	}
+	return "other"
 }
 
 func searchTitles(q string, kinds []string) []SearchHit {

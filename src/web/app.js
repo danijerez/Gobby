@@ -108,7 +108,7 @@ function gobby() {
     strings: {
       es: {
         search: 'Buscar en tu biblioteca…', series: 'Series', movie: 'Películas',
-        audio: 'Música', book: 'Libros', photos: 'Fotos', files: 'Ficheros', watch: 'Pendientes',
+        audio: 'Música', book: 'Libros', photos: 'Fotos', files: 'Ficheros', watch: 'Guardados',
         albums: 'Álbumes', authors: 'Autores', movies: 'Películas', singles: 'Sueltos', folders: 'Carpetas', looseFiles: 'Sueltos', filesUnit: 'ficheros', filterFiles: 'Filtrar ficheros…',
         empty: 'Nada por aquí todavía.', episodes: 'episodios', tracks: 'temas', books: 'libros',
         title: 'Título', notes: 'Notas', rating: 'Valoración', location: 'Ubicación', reveal: 'Abrir carpeta', uploadHere: 'Subir aquí', deleteFile: 'Borrar del disco', deleteConfirm: '¿Borrar «{name}» del disco? No se puede deshacer.', deleteFailed: 'No se pudo borrar.',
@@ -128,9 +128,10 @@ function gobby() {
         name: 'Nombre', size: 'Tamaño', resolution: 'Resolución', vcodec: 'Vídeo', acodec: 'Audio', channels: 'Canales', languages: 'Idiomas',
         audioWarn: 'Audio {c}: el navegador no lo reproduce. Verás vídeo sin sonido — ábrelo en un reproductor externo (VLC / MX Player).',
         more: 'Más',
-        watchSearchPlaceholder: 'Buscar por título…',
+        watchSearchPlaceholder: 'Buscar por título o pegar un enlace…',
         watchEmpty: 'Busca algo que quieras ver, escuchar o leer.', remove: 'Quitar', other: 'Otro', home: 'Inicio', watchedDone: 'Visto', markDone: 'Marcar como visto', markUndone: 'Marcar como pendiente',
-        game: 'Juego', continueW: 'Seguir viendo', newlyAdded: 'Novedades', preview: 'Previsualizar', send: 'Enviar', addManual: 'Añadir manualmente',
+        game: 'Juego', link: 'Enlace', continueW: 'Seguir viendo', newlyAdded: 'Novedades', preview: 'Previsualizar', send: 'Enviar', addManual: 'Añadir manualmente',
+        collection: 'Colección', collectionOnly: 'Solo lo que tengo', owned: 'En propiedad', ownedYes: 'Lo tengo', markOwned: 'Marcar como propio', location: 'Ubicación', format: 'Formato', condition: 'Estado', scan: 'Escanear código', scanHint: 'Apunta al código de barras', scanNoCamera: 'No hay acceso a la cámara', goToLink: 'Ir al enlace', scanLinked: '✓ Enlazado con un elemento existente y marcado como propio',
         manualOnly: 'Sin búsqueda online — se añade manualmente', addAsType: 'Añadir como {type}',
         season: 'Temporada', otherEps: 'Otros', mArtist: 'Artista', mAuthor: 'Autor', mSeries: 'Serie', mAlbum: 'Álbum', mCollection: 'Colección',
         changeFolder: 'Cambiar carpeta', exportDb: 'Exportar base de datos', importDb: 'Importar base de datos',
@@ -152,7 +153,7 @@ function gobby() {
       },
       en: {
         search: 'Search your library…', series: 'Series', movie: 'Movies',
-        audio: 'Music', book: 'Books', photos: 'Photos', files: 'Files', watch: 'Watchlist',
+        audio: 'Music', book: 'Books', photos: 'Photos', files: 'Files', watch: 'Saved',
         albums: 'Albums', authors: 'Authors', movies: 'Movies', singles: 'Singles', folders: 'Folders', looseFiles: 'Loose', filesUnit: 'files', filterFiles: 'Filter files…',
         empty: 'Nothing here yet.', episodes: 'episodes', tracks: 'tracks', books: 'books',
         title: 'Title', notes: 'Notes', rating: 'Rating', location: 'Location', reveal: 'Open folder', uploadHere: 'Upload here', deleteFile: 'Delete from disk', deleteConfirm: 'Delete "{name}" from disk? This cannot be undone.', deleteFailed: 'Could not delete.',
@@ -172,9 +173,10 @@ function gobby() {
         name: 'Name', size: 'Size', resolution: 'Resolution', vcodec: 'Video', acodec: 'Audio', channels: 'Channels', languages: 'Languages',
         audioWarn: "Audio {c}: your browser can't decode it. Video will play with no sound — open it in an external player (VLC / MX Player).",
         more: 'More',
-        watchSearchPlaceholder: 'Search by title…',
+        watchSearchPlaceholder: 'Search by title or paste a link…',
         watchEmpty: 'Search for something to watch, listen to or read.', remove: 'Remove', other: 'Other', home: 'Home', watchedDone: 'Done', markDone: 'Mark as done', markUndone: 'Mark as pending',
-        game: 'Game', continueW: 'Continue watching', newlyAdded: 'Recently added', preview: 'Preview', send: 'Send', addManual: 'Add manually',
+        game: 'Game', link: 'Link', continueW: 'Continue watching', newlyAdded: 'Recently added', preview: 'Preview', send: 'Send', addManual: 'Add manually',
+        collection: 'Collection', collectionOnly: 'Only what I own', owned: 'Owned', ownedYes: 'I own it', markOwned: 'Mark as owned', location: 'Location', format: 'Format', condition: 'Condition', scan: 'Scan barcode', scanHint: 'Point at the barcode', scanNoCamera: 'No camera access', goToLink: 'Go to link', scanLinked: '✓ Linked to an existing entry and marked as owned',
         manualOnly: 'No online search — added manually', addAsType: 'Add as {type}',
         season: 'Season', otherEps: 'Other', mArtist: 'Artist', mAuthor: 'Author', mSeries: 'Series', mAlbum: 'Album', mCollection: 'Collection',
         changeFolder: 'Change folder', exportDb: 'Export database', importDb: 'Import database',
@@ -196,7 +198,7 @@ function gobby() {
       },
       fr: {
         search: 'Rechercher dans votre bibliothèque…', series: 'Séries', movie: 'Films',
-        audio: 'Musique', book: 'Livres', photos: 'Photos', files: 'Fichiers', watch: 'À voir',
+        audio: 'Musique', book: 'Livres', photos: 'Photos', files: 'Fichiers', watch: 'Enregistrés',
         albums: 'Albums', authors: 'Auteurs', movies: 'Films', singles: 'Isolés', folders: 'Dossiers', looseFiles: 'Isolés', filesUnit: 'fichiers', filterFiles: 'Filtrer les fichiers…',
         empty: 'Rien ici pour le moment.', episodes: 'épisodes', tracks: 'pistes', books: 'livres',
         title: 'Titre', notes: 'Notes', rating: 'Note', location: 'Emplacement', reveal: 'Ouvrir le dossier', uploadHere: 'Téléverser ici', deleteFile: 'Supprimer du disque', deleteConfirm: 'Supprimer « {name} » du disque ? Irréversible.', deleteFailed: 'Suppression impossible.',
@@ -218,7 +220,8 @@ function gobby() {
         more: 'Plus',
         watchSearchPlaceholder: 'Rechercher par titre…',
         watchEmpty: 'Cherchez quelque chose à voir, écouter ou lire.', remove: 'Retirer', other: 'Autre', home: 'Accueil', watchedDone: 'Vu', markDone: 'Marquer comme vu', markUndone: 'Marquer comme à voir',
-        game: 'Jeu', continueW: 'Reprendre', newlyAdded: 'Nouveautés', preview: 'Aperçu', send: 'Envoyer', addManual: 'Ajouter manuellement',
+        game: 'Jeu', link: 'Lien', continueW: 'Reprendre', newlyAdded: 'Nouveautés', preview: 'Aperçu', send: 'Envoyer', addManual: 'Ajouter manuellement',
+        collection: 'Collection', collectionOnly: 'Seulement ce que je possède', owned: 'Possédé', ownedYes: 'Je l\'ai', markOwned: 'Marquer comme possédé', location: 'Emplacement', format: 'Format', condition: 'État', scan: 'Scanner le code', scanHint: 'Visez le code-barres', scanNoCamera: 'Pas d\'accès à la caméra', goToLink: 'Ouvrir le lien', scanLinked: '✓ Associé à une entrée existante et marqué comme possédé',
         manualOnly: 'Sans recherche en ligne — ajout manuel', addAsType: 'Ajouter comme {type}',
         season: 'Saison', otherEps: 'Autres', mArtist: 'Artiste', mAuthor: 'Auteur', mSeries: 'Série', mAlbum: 'Album', mCollection: 'Collection',
         changeFolder: 'Changer de dossier', exportDb: 'Exporter la base', importDb: 'Importer une base',
@@ -240,7 +243,7 @@ function gobby() {
       },
       de: {
         search: 'Deine Bibliothek durchsuchen…', series: 'Serien', movie: 'Filme',
-        audio: 'Musik', book: 'Bücher', photos: 'Fotos', files: 'Dateien', watch: 'Merkliste',
+        audio: 'Musik', book: 'Bücher', photos: 'Fotos', files: 'Dateien', watch: 'Gespeichert',
         albums: 'Alben', authors: 'Autoren', movies: 'Filme', singles: 'Einzeln', folders: 'Ordner', looseFiles: 'Einzeln', filesUnit: 'Dateien', filterFiles: 'Dateien filtern…',
         empty: 'Hier ist noch nichts.', episodes: 'Folgen', tracks: 'Titel', books: 'Bücher',
         title: 'Titel', notes: 'Notizen', rating: 'Bewertung', location: 'Speicherort', reveal: 'Ordner öffnen', uploadHere: 'Hier hochladen', deleteFile: 'Von Festplatte löschen', deleteConfirm: '„{name}“ von der Festplatte löschen? Nicht umkehrbar.', deleteFailed: 'Löschen fehlgeschlagen.',
@@ -262,7 +265,8 @@ function gobby() {
         more: 'Mehr',
         watchSearchPlaceholder: 'Nach Titel suchen…',
         watchEmpty: 'Suche etwas zum Ansehen, Anhören oder Lesen.', remove: 'Entfernen', other: 'Andere', home: 'Start', watchedDone: 'Gesehen', markDone: 'Als gesehen markieren', markUndone: 'Als offen markieren',
-        game: 'Spiel', continueW: 'Weiterschauen', newlyAdded: 'Neu hinzugefügt', preview: 'Vorschau', send: 'Senden', addManual: 'Manuell hinzufügen',
+        game: 'Spiel', link: 'Link', continueW: 'Weiterschauen', newlyAdded: 'Neu hinzugefügt', preview: 'Vorschau', send: 'Senden', addManual: 'Manuell hinzufügen',
+        collection: 'Sammlung', collectionOnly: 'Nur was ich besitze', owned: 'Im Besitz', ownedYes: 'Besitze ich', markOwned: 'Als Besitz markieren', location: 'Standort', format: 'Format', condition: 'Zustand', scan: 'Code scannen', scanHint: 'Auf den Barcode richten', scanNoCamera: 'Kein Kamerazugriff', goToLink: 'Zum Link', scanLinked: '✓ Mit vorhandenem Eintrag verknüpft und als Besitz markiert',
         manualOnly: 'Keine Online-Suche — manuell hinzugefügt', addAsType: 'Als {type} hinzufügen',
         season: 'Staffel', otherEps: 'Andere', mArtist: 'Künstler', mAuthor: 'Autor', mSeries: 'Serie', mAlbum: 'Album', mCollection: 'Sammlung',
         changeFolder: 'Ordner wechseln', exportDb: 'Datenbank exportieren', importDb: 'Datenbank importieren',
@@ -284,7 +288,7 @@ function gobby() {
       },
       it: {
         search: 'Cerca nella tua libreria…', series: 'Serie', movie: 'Film',
-        audio: 'Musica', book: 'Libri', photos: 'Foto', files: 'File', watch: 'Da vedere',
+        audio: 'Musica', book: 'Libri', photos: 'Foto', files: 'File', watch: 'Salvati',
         albums: 'Album', authors: 'Autori', movies: 'Film', singles: 'Sciolti', folders: 'Cartelle', looseFiles: 'Sciolti', filesUnit: 'file', filterFiles: 'Filtra file…',
         empty: 'Qui non c’è ancora niente.', episodes: 'episodi', tracks: 'tracce', books: 'libri',
         title: 'Titolo', notes: 'Note', rating: 'Valutazione', location: 'Posizione', reveal: 'Apri cartella', uploadHere: 'Carica qui', deleteFile: 'Elimina dal disco', deleteConfirm: 'Eliminare «{name}» dal disco? Irreversibile.', deleteFailed: 'Impossibile eliminare.',
@@ -306,7 +310,8 @@ function gobby() {
         more: 'Altro',
         watchSearchPlaceholder: 'Cerca per titolo…',
         watchEmpty: 'Cerca qualcosa da vedere, ascoltare o leggere.', remove: 'Rimuovi', other: 'Altro', home: 'Home', watchedDone: 'Visto', markDone: 'Segna come visto', markUndone: 'Segna come da vedere',
-        game: 'Gioco', continueW: 'Continua a guardare', newlyAdded: 'Novità', preview: 'Anteprima', send: 'Invia', addManual: 'Aggiungi manualmente',
+        game: 'Gioco', link: 'Link', continueW: 'Continua a guardare', newlyAdded: 'Novità', preview: 'Anteprima', send: 'Invia', addManual: 'Aggiungi manualmente',
+        collection: 'Collezione', collectionOnly: 'Solo ciò che possiedo', owned: 'Posseduto', ownedYes: 'Ce l\'ho', markOwned: 'Segna come posseduto', location: 'Posizione', format: 'Formato', condition: 'Condizione', scan: 'Scansiona codice', scanHint: 'Inquadra il codice a barre', scanNoCamera: 'Nessun accesso alla fotocamera', goToLink: 'Vai al link', scanLinked: '✓ Collegato a una voce esistente e segnato come posseduto',
         manualOnly: 'Senza ricerca online — aggiunto manualmente', addAsType: 'Aggiungi come {type}',
         season: 'Stagione', otherEps: 'Altri', mArtist: 'Artista', mAuthor: 'Autore', mSeries: 'Serie', mAlbum: 'Album', mCollection: 'Raccolta',
         changeFolder: 'Cambia cartella', exportDb: 'Esporta database', importDb: 'Importa database',
@@ -328,7 +333,7 @@ function gobby() {
       },
       pt: {
         search: 'Pesquisar na sua biblioteca…', series: 'Séries', movie: 'Filmes',
-        audio: 'Música', book: 'Livros', photos: 'Fotos', files: 'Ficheiros', watch: 'Para ver',
+        audio: 'Música', book: 'Livros', photos: 'Fotos', files: 'Ficheiros', watch: 'Guardados',
         albums: 'Álbuns', authors: 'Autores', movies: 'Filmes', singles: 'Soltos', folders: 'Pastas', looseFiles: 'Soltos', filesUnit: 'ficheiros', filterFiles: 'Filtrar ficheiros…',
         empty: 'Ainda não há nada aqui.', episodes: 'episódios', tracks: 'faixas', books: 'livros',
         title: 'Título', notes: 'Notas', rating: 'Avaliação', location: 'Localização', reveal: 'Abrir pasta', uploadHere: 'Enviar aqui', deleteFile: 'Apagar do disco', deleteConfirm: 'Apagar «{name}» do disco? Não pode ser desfeito.', deleteFailed: 'Não foi possível apagar.',
@@ -350,7 +355,8 @@ function gobby() {
         more: 'Mais',
         watchSearchPlaceholder: 'Pesquisar por título…',
         watchEmpty: 'Procure algo para ver, ouvir ou ler.', remove: 'Remover', other: 'Outro', home: 'Início', watchedDone: 'Visto', markDone: 'Marcar como visto', markUndone: 'Marcar como pendente',
-        game: 'Jogo', continueW: 'Continuar a ver', newlyAdded: 'Novidades', preview: 'Pré-visualizar', send: 'Enviar', addManual: 'Adicionar manualmente',
+        game: 'Jogo', link: 'Ligação', continueW: 'Continuar a ver', newlyAdded: 'Novidades', preview: 'Pré-visualizar', send: 'Enviar', addManual: 'Adicionar manualmente',
+        collection: 'Coleção', collectionOnly: 'Só o que tenho', owned: 'Em posse', ownedYes: 'Tenho', markOwned: 'Marcar como meu', location: 'Localização', format: 'Formato', condition: 'Estado', scan: 'Digitalizar código', scanHint: 'Aponte para o código de barras', scanNoCamera: 'Sem acesso à câmara', goToLink: 'Ir para a ligação', scanLinked: '✓ Associado a uma entrada existente e marcado como próprio',
         manualOnly: 'Sem pesquisa online — adicionado manualmente', addAsType: 'Adicionar como {type}',
         season: 'Temporada', otherEps: 'Outros', mArtist: 'Artista', mAuthor: 'Autor', mSeries: 'Série', mAlbum: 'Álbum', mCollection: 'Coleção',
         changeFolder: 'Mudar pasta', exportDb: 'Exportar base de dados', importDb: 'Importar base de dados',
@@ -672,6 +678,9 @@ function gobby() {
         music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
         book: '<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>',
         bookmark: '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/>',
+        link: '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>',
+        box: '<path d="m21 8-9-5-9 5v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5M12 13v8"/>',
+        scan: '<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/>',
         back: '<path d="m12 19-7-7 7-7M19 12H5"/>',
         check: '<path d="M20 6 9 17l-5-5"/>',
         save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
@@ -2108,7 +2117,7 @@ function gobby() {
     newWatchNote: '',
     // which watchlist types have an online provider (the rest are manual-only)
     onlineKinds: ['movie', 'series', 'book', 'audio', 'game'],
-    allWatchKinds: ['movie', 'series', 'audio', 'book', 'game', 'other'],
+    allWatchKinds: ['movie', 'series', 'audio', 'book', 'game', 'link', 'other'],
     toggleKind(k) {
       const i = this.searchKinds.indexOf(k);
       if (i >= 0) this.searchKinds.splice(i, 1);
@@ -2116,10 +2125,12 @@ function gobby() {
       this.searchWatch();
     },
     kindOn(k) { return this.searchKinds.includes(k); },
-    // the type chips double as a filter of the saved list: none active = show all
+    ownedOnly: false,
     filteredWatch() {
-      if (!this.searchKinds.length) return this.watch;
-      return this.watch.filter(w => this.searchKinds.includes(w.kind || 'other'));
+      let list = this.watch;
+      if (this.ownedOnly) list = list.filter(w => w.owned);
+      if (this.searchKinds.length) list = list.filter(w => this.searchKinds.includes(w.kind || 'other'));
+      return list;
     },
     async searchWatch() {
       const q = this.wq.trim();
@@ -2137,24 +2148,47 @@ function gobby() {
       await fetch('/api/watchlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: hit.title, kind: hit.kind, poster: hit.poster, year: hit.year }),
+        body: JSON.stringify({ title: hit.title, kind: hit.kind, poster: hit.poster, year: hit.year, ext_id: hit.ext_id, ean: this.pendingEan }),
       });
       this.wq = ''; this.wresults = [];
+      this.pendingEan = ''; this.pendingPoster = ''; this.pendingKind = '';
       this.loadWatch();
     },
-    // the type a manual add uses: the first active chip, else "other".
-    manualKind() { return this.searchKinds[0] || 'other'; },
-    // manual add for anything the online search can't find (games, notes):
-    // the typed query becomes the title, typed as the active chip.
+    isURL(s) { return /^https?:\/\/\S+$/i.test(s.trim()); },
+    manualKind() { return this.isURL(this.wq) ? 'link' : (this.searchKinds[0] || 'other'); },
     async addManual() {
       const t = this.wq.trim();
       if (!t) return;
+      let body = {
+        title: t,
+        kind: this.pendingKind || this.manualKind(),
+        note: this.newWatchNote,
+        ean: this.pendingEan,
+        poster: this.pendingPoster,
+      };
+      if (this.isURL(t)) {
+        let meta = {};
+        try {
+          const r = await fetch('/api/watchlist/fetch', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: t }),
+          });
+          if (r.ok) meta = (await r.json()) || {};
+        } catch (e) {}
+        body = {
+          kind: 'link', url: t,
+          title: meta.title || t,
+          note: this.newWatchNote || meta.note || '',
+          poster: meta.poster || '',
+        };
+      }
       await fetch('/api/watchlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: t, kind: this.manualKind(), note: this.newWatchNote }),
+        body: JSON.stringify(body),
       });
       this.wq = ''; this.wresults = []; this.newWatchNote = '';
+      this.pendingEan = ''; this.pendingPoster = ''; this.pendingKind = '';
       this.loadWatch();
     },
     async toggle(w) {
@@ -2169,8 +2203,11 @@ function gobby() {
       await fetch(`/api/watchlist/${w.id}`, { method: 'DELETE' });
       this.loadWatch();
     },
-    // open a watchlist entry's detail page (same layout as media)
-    openWatch(w) { this.auraFromPoster(w.poster); this.pushView({ view: 'watchitem', watch: { ...w } }); },
+    hostOf(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } },
+    openWatch(w) {
+      this.auraFromPoster(w.poster);
+      this.pushView({ view: 'watchitem', watch: { ...w } });
+    },
     async saveWatchNote(w) {
       await fetch(`/api/watchlist/${w.id}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -2210,6 +2247,99 @@ function gobby() {
       if (!w.fields) w.fields = [];
       w.fields.push({ k: '', v: '' });
     },
+    addPresetField(w, key) {
+      if (!w.fields) w.fields = [];
+      const label = this.t(key);
+      if (w.fields.some(f => f.k === label)) return;
+      w.fields.push({ k: label, v: '' });
+      this.saveWatchFields(w);
+    },
+    scanSupported: typeof window !== 'undefined' && 'BarcodeDetector' in window,
+    scanning: false,
+    scanError: '',
+    async scanBarcode() {
+      if (!this.scanSupported) return;
+      this.scanError = '';
+      let stream;
+      this.scanMsg = '';
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      } catch (e) {
+        this.scanError = this.t('scanNoCamera');
+        this.scanning = true;
+        return;
+      }
+      this._scanLive = true;
+      this.scanning = true;
+      await this.$nextTick();
+      const video = this.$refs.scanVideo;
+      video.srcObject = stream;
+      await video.play();
+      const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
+      this._stopCamera = () => {
+        stream.getTracks().forEach(t => t.stop());
+        this._scanLive = false;
+      };
+      const tick = async () => {
+        if (!this._scanLive) return;
+        try {
+          const codes = await detector.detect(video);
+          if (codes.length) {
+            await this.onScanned(codes[0].rawValue);
+            return;
+          }
+        } catch (e) {}
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    },
+    pendingEan: '',
+    pendingPoster: '',
+    pendingKind: '',
+    scanMsg: '',
+    async onScanned(ean) {
+      if (this._stopCamera) this._stopCamera();
+      try {
+        const r = await fetch('/api/watchlist/by-ean?ean=' + encodeURIComponent(ean));
+        const res = r.ok ? await r.json() : {};
+        if (res.linked) {
+          this.loadWatch();
+          this.scanMsg = this.t('scanLinked');
+          return;
+        }
+      } catch (e) {}
+      this.pendingEan = ean;
+      this.pendingPoster = '';
+      this.pendingKind = '';
+      let hit = {};
+      try {
+        const r = await fetch('/api/watchlist/lookup?ean=' + encodeURIComponent(ean));
+        hit = r.ok ? await r.json() : {};
+      } catch (e) {}
+      this.scanning = false;
+      if (hit.found && hit.title) {
+        this.pendingPoster = hit.poster || '';
+        this.pendingKind = hit.kind || '';
+        this.wq = hit.title;
+        if (hit.kind && this.onlineKinds.includes(hit.kind)) this.searchKinds = [hit.kind];
+      } else {
+        this.wq = ean;
+      }
+      this.searchWatch();
+    },
+    closeScan() {
+      if (this._stopCamera) this._stopCamera();
+      this.scanning = false;
+      this.scanMsg = '';
+    },
+    async toggleOwned(w) {
+      w.owned = !w.owned;
+      await fetch(`/api/watchlist/${w.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ owned: w.owned }),
+      });
+      this.loadWatch();
+    },
     removeWatchField(w, i) {
       w.fields.splice(i, 1);
       this.saveWatchField(w, 'fields', w.fields);
@@ -2227,6 +2357,6 @@ function gobby() {
         if (r.ok) { item.has_cover = true; item._bust = Date.now(); }
       } catch (e) { /* bad URL / CORS — silently ignore */ } finally { this.coverBusy = false; }
     },
-    watchIcon(kind) { return this.svg({ movie: 'clapper', series: 'film', book: 'book', audio: 'music', game: 'gamepad' }[kind] || 'bookmark'); },
+    watchIcon(kind) { return this.svg({ movie: 'clapper', series: 'film', book: 'book', audio: 'music', game: 'gamepad', link: 'link' }[kind] || 'bookmark'); },
   };
 }

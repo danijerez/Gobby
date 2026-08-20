@@ -11,7 +11,7 @@
     <img alt="Alpine.js" src="https://img.shields.io/badge/Alpine.js-8BC0D0?logo=alpinedotjs&logoColor=black">
     <img alt="MCP" src="https://img.shields.io/badge/MCP-server-6E56CF">
     <img alt="Cloudflare" src="https://img.shields.io/badge/Cloudflare-Tunnel-F38020?logo=cloudflare&logoColor=white">
-    <img alt="version" src="https://img.shields.io/badge/version-0.5.0-2ea44f">
+    <img alt="version" src="https://img.shields.io/badge/version-0.6.0-2ea44f">
     <img alt="license" src="https://img.shields.io/badge/code-MIT-blue">
     <img alt="release binary" src="https://img.shields.io/badge/release%20binary-GPLv3-orange">
   </p>
@@ -141,7 +141,11 @@ another way to wake Gobby, not a replacement.
   per-image details (name, format, resolution, size).
 - **Filter by colour** — Gobby reads the dominant colour of every cover and photo, so
   you can filter the library by colour with a click.
-- **Watchlist** — note anything to watch/read/listen later, with custom fields and covers.
+- **Saved** — one place for anything to watch/read/listen later, links worth keeping
+  (paste a URL and Gobby fetches the title, description and image — GitHub repos too),
+  and your **physical shelf**: mark what you own, add location/format/condition, and
+  **scan a barcode** (phone camera) to pull the title and cover and file it — or link
+  it to an entry you already had, no duplicates.
 - **Plays in the browser** — mkv/avi are remuxed on the fly with a slim **ffmpeg**
   (video copied, audio to AAC), so they play where browsers normally refuse.
 - **Pick the audio, drop in subtitles** — choose an audio track and load embedded

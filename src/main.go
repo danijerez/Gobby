@@ -12,17 +12,19 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/mdp/qrterminal/v3"
 )
 
-var version = "0.5.0"
+var version = "0.6.0"
 
 var (
 	flagPath    = flag.String("p", envOr("GOBBY_PATH", ""), "carpeta a escanear (por defecto: junto al binario)")
 	flagPort    = flag.String("port", envOr("GOBBY_PORT", "8420"), "puerto del servidor")
 	flagLibrary = flag.String("library", envOr("GOBBY_LIBRARY", ""), "identificador estable de biblioteca (útil para discos extraíbles)")
 	flagData    = flag.String("data", envOr("GOBBY_DATA", ""), "carpeta para gobby.db (por defecto: junto a los medios; útil para contenedores)")
+	flagNoOpen  = flag.Bool("no-browser", envOr("GOBBY_NO_BROWSER", "") != "", "no abrir el navegador al arrancar")
 )
 
 func envOr(key, def string) string {
@@ -95,11 +97,28 @@ func main() {
 	addr := "0.0.0.0:" + *flagPort
 	printAccess(*flagPort, version)
 
+	if !*flagNoOpen {
+		go openBrowserWhenReady(*flagPort)
+	}
+
 	if err := serve(ctx, db, addr, version, dbPath, lb); err != nil {
 		if strings.Contains(err.Error(), "Only one usage") || strings.Contains(err.Error(), "address already in use") {
 			fatal("puerto ocupado", fmt.Errorf("el puerto %s ya está en uso — ¿tienes otro Gobby abierto? Ciérralo y vuelve a intentarlo", *flagPort))
 		}
 		fatal("serve", err)
+	}
+}
+
+func openBrowserWhenReady(port string) {
+	target := net.JoinHostPort("127.0.0.1", port)
+	for i := 0; i < 100; i++ {
+		c, err := net.DialTimeout("tcp", target, 200*time.Millisecond)
+		if err == nil {
+			c.Close()
+			_ = openInPlayer("http://" + target)
+			return
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
 }
 

@@ -11,7 +11,7 @@
     <img alt="Alpine.js" src="https://img.shields.io/badge/Alpine.js-8BC0D0?logo=alpinedotjs&logoColor=black">
     <img alt="MCP" src="https://img.shields.io/badge/MCP-server-6E56CF">
     <img alt="Cloudflare" src="https://img.shields.io/badge/Cloudflare-Tunnel-F38020?logo=cloudflare&logoColor=white">
-    <img alt="version" src="https://img.shields.io/badge/version-0.5.0-2ea44f">
+    <img alt="version" src="https://img.shields.io/badge/version-0.6.0-2ea44f">
     <img alt="license" src="https://img.shields.io/badge/code-MIT-blue">
     <img alt="release binary" src="https://img.shields.io/badge/release%20binary-GPLv3-orange">
   </p>
@@ -142,7 +142,11 @@ contenedor es solo otra forma de despertar a Gobby, no un reemplazo.
   lightbox y detalles por imagen (nombre, formato, resolución, tamaño).
 - **Filtro por color** — Gobby lee el color dominante de cada carátula y foto, para
   filtrar la biblioteca por color con un clic.
-- **Pendientes** — apunta cualquier cosa para ver/leer/escuchar después, con campos personalizados y carátulas.
+- **Guardados** — un único sitio para lo que quieres ver/leer/escuchar después, enlaces
+  de interés (pega una URL y Gobby trae título, descripción e imagen — también repos de
+  GitHub) y tu **estantería física**: marca lo que tienes, añade ubicación/formato/estado
+  y **escanea el código de barras** (cámara del móvil) para traer título y carátula y
+  archivarlo — o enlazarlo con algo que ya tenías, sin duplicados.
 - **Reproduce en el navegador** — los mkv/avi se remultiplexan al vuelo con un
   **ffmpeg** slim (vídeo copiado, audio a AAC), así se reproducen donde los
   navegadores normalmente se niegan.

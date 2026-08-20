@@ -3,6 +3,30 @@
 All notable changes to Gobby are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.6.0]
+
+### Added
+- **Watchlist is now "Saved"** — one list for pending media, links of interest and
+  a physical inventory (renamed across all 6 languages).
+- **Links of interest** — paste a URL and Gobby fetches its title, description and
+  image (GitHub repos via the public API, everything else via Open Graph / `<title>`).
+  Saved links open a detail page with a **Go to link** button.
+- **Physical inventory** — mark an entry as **owned**, filter to your **collection**,
+  and add **location / format / condition** with one-tap preset fields (owned entries
+  render dimmed with a bright marker).
+- **Barcode scan** — scan a movie/game/book with the phone camera (native
+  `BarcodeDetector`, no library). ISBNs resolve via OpenLibrary; other codes via
+  UPCitemdb — Gobby fills in the title and cover, guesses the type, and runs a rich
+  metadata lookup (synopsis, genres) for films.
+- **Rich metadata when saving** a movie/series — synopsis, genres, runtime, rating
+  and director come from Cinemeta, not just a bare title.
+- **No duplicates** — saving or scanning something you already have links to the
+  existing entry (matched by IMDb id or barcode) and marks it owned, instead of
+  adding a second card.
+- **Opens the browser on start** — launching Gobby opens the web page automatically
+  (disable with `-no-browser` / `GOBBY_NO_BROWSER`; off by default in Docker), so the
+  Linux binary "just opens" on double-click.
+
 ## [0.5.0]
 
 ### Added

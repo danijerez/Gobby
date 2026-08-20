@@ -151,6 +151,10 @@ func openDB(path string) (*sql.DB, error) {
 	db.Exec(`ALTER TABLE watchlist ADD COLUMN poster TEXT`)
 	db.Exec(`ALTER TABLE watchlist ADD COLUMN year TEXT`)
 	db.Exec(`ALTER TABLE watchlist ADD COLUMN fields TEXT`)
+	db.Exec(`ALTER TABLE watchlist ADD COLUMN url TEXT`)
+	db.Exec(`ALTER TABLE watchlist ADD COLUMN owned INTEGER DEFAULT 0`)
+	db.Exec(`ALTER TABLE watchlist ADD COLUMN ext_id TEXT`)
+	db.Exec(`ALTER TABLE watchlist ADD COLUMN ean TEXT`)
 	db.Exec(`ALTER TABLE items ADD COLUMN added_at INTEGER DEFAULT 0`)
 	db.Exec(`ALTER TABLE items ADD COLUMN last_opened INTEGER DEFAULT 0`)
 	db.Exec(`ALTER TABLE items ADD COLUMN progress INTEGER DEFAULT 0`)
@@ -1224,18 +1228,50 @@ type Watch struct {
 	Note   string       `json:"note"`
 	Poster string       `json:"poster"`
 	Year   string       `json:"year"`
+	URL    string       `json:"url"`
+	Owned  bool         `json:"owned"`
 	Done   bool         `json:"done"`
 	Fields []WatchField `json:"fields"`
 }
 
-func addWatch(db *sql.DB, kind, title, note, poster, year string) error {
-	_, err := db.Exec(`INSERT INTO watchlist (kind, title, note, poster, year, created_at) VALUES (?,?,?,?,?,?)`,
-		kind, title, note, poster, year, time.Now().Unix())
+func addWatch(db *sql.DB, kind, title, note, poster, year, url string) (int64, error) {
+	res, err := db.Exec(`INSERT INTO watchlist (kind, title, note, poster, year, url, created_at) VALUES (?,?,?,?,?,?,?)`,
+		kind, title, note, poster, year, url, time.Now().Unix())
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func findWatchByKey(db *sql.DB, extID, ean string) (int64, bool) {
+	var id int64
+	if ean != "" {
+		if err := db.QueryRow(`SELECT id FROM watchlist WHERE ean=? LIMIT 1`, ean).Scan(&id); err == nil {
+			return id, true
+		}
+	}
+	if extID != "" {
+		if err := db.QueryRow(`SELECT id FROM watchlist WHERE ext_id=? LIMIT 1`, extID).Scan(&id); err == nil {
+			return id, true
+		}
+	}
+	return 0, false
+}
+
+func linkWatch(db *sql.DB, id int64, extID, ean string) error {
+	_, err := db.Exec(`UPDATE watchlist SET owned=1,
+		ext_id=COALESCE(NULLIF(ext_id,''),?), ean=COALESCE(NULLIF(ean,''),?) WHERE id=?`,
+		extID, ean, id)
+	return err
+}
+
+func setWatchKeys(db *sql.DB, id int64, extID, ean string) error {
+	_, err := db.Exec(`UPDATE watchlist SET ext_id=?, ean=? WHERE id=?`, extID, ean, id)
 	return err
 }
 
 func listWatch(db *sql.DB) ([]Watch, error) {
-	rows, err := db.Query(`SELECT id, kind, title, COALESCE(note,''), COALESCE(poster,''), COALESCE(year,''), done, COALESCE(fields,'') FROM watchlist ORDER BY done, created_at DESC`)
+	rows, err := db.Query(`SELECT id, kind, title, COALESCE(note,''), COALESCE(poster,''), COALESCE(year,''), COALESCE(url,''), COALESCE(owned,0), done, COALESCE(fields,'') FROM watchlist ORDER BY done, created_at DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -1244,7 +1280,7 @@ func listWatch(db *sql.DB) ([]Watch, error) {
 	for rows.Next() {
 		var w Watch
 		var fieldsJSON string
-		if err := rows.Scan(&w.ID, &w.Kind, &w.Title, &w.Note, &w.Poster, &w.Year, &w.Done, &fieldsJSON); err != nil {
+		if err := rows.Scan(&w.ID, &w.Kind, &w.Title, &w.Note, &w.Poster, &w.Year, &w.URL, &w.Owned, &w.Done, &fieldsJSON); err != nil {
 			return nil, err
 		}
 		if fieldsJSON != "" {
@@ -1275,6 +1311,16 @@ func setWatchPoster(db *sql.DB, id int64, poster string) error {
 	return err
 }
 
+func setWatchURL(db *sql.DB, id int64, url string) error {
+	_, err := db.Exec(`UPDATE watchlist SET url=? WHERE id=?`, url, id)
+	return err
+}
+
+func setWatchOwned(db *sql.DB, id int64, owned bool) error {
+	_, err := db.Exec(`UPDATE watchlist SET owned=? WHERE id=?`, owned, id)
+	return err
+}
+
 func setWatchFields(db *sql.DB, id int64, fields []WatchField) error {
 	b, err := json.Marshal(fields)
 	if err != nil {
@@ -1283,3 +1329,4 @@ func setWatchFields(db *sql.DB, id int64, fields []WatchField) error {
 	_, err = db.Exec(`UPDATE watchlist SET fields=? WHERE id=?`, string(b), id)
 	return err
 }
+

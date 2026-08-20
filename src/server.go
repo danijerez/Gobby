@@ -511,7 +511,11 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 	})
 
 	mux.HandleFunc("POST /api/watchlist", func(w http.ResponseWriter, r *http.Request) {
-		var in struct{ Kind, Title, Note, Poster, Year string }
+		var in struct {
+			Kind, Title, Note, Poster, Year, URL string
+			ExtID                                string `json:"ext_id"`
+			EAN                                  string `json:"ean"`
+		}
 		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 			http.Error(w, err.Error(), 400)
 			return
@@ -520,7 +524,29 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 			http.Error(w, "title required", 400)
 			return
 		}
-		writeJSON(w, map[string]string{"status": "ok"}, addWatch(db, in.Kind, in.Title, in.Note, in.Poster, in.Year))
+		if id, ok := findWatchByKey(db, in.ExtID, in.EAN); ok {
+			writeJSON(w, map[string]string{"status": "linked"}, linkWatch(db, id, in.ExtID, in.EAN))
+			return
+		}
+		var fields []WatchField
+		if in.ExtID != "" {
+			note, poster, f := enrichWatchHit(in.Kind, in.ExtID)
+			if note != "" {
+				in.Note = note
+			}
+			if poster != "" {
+				in.Poster = poster
+			}
+			fields = f
+		}
+		id, err := addWatch(db, in.Kind, in.Title, in.Note, in.Poster, in.Year, in.URL)
+		if err == nil {
+			_ = setWatchKeys(db, id, in.ExtID, in.EAN)
+			if len(fields) > 0 {
+				_ = setWatchFields(db, id, fields)
+			}
+		}
+		writeJSON(w, map[string]string{"status": "ok"}, err)
 	})
 
 	mux.HandleFunc("PUT /api/watchlist/{id}", func(w http.ResponseWriter, r *http.Request) {
@@ -529,6 +555,8 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 			Done   *bool         `json:"done"`
 			Note   *string       `json:"note"`
 			Poster *string       `json:"poster"`
+			URL    *string       `json:"url"`
+			Owned  *bool         `json:"owned"`
 			Fields *[]WatchField `json:"fields"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
@@ -553,6 +581,18 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 				return
 			}
 		}
+		if in.URL != nil {
+			if err := setWatchURL(db, id, *in.URL); err != nil {
+				http.Error(w, err.Error(), 500)
+				return
+			}
+		}
+		if in.Owned != nil {
+			if err := setWatchOwned(db, id, *in.Owned); err != nil {
+				http.Error(w, err.Error(), 500)
+				return
+			}
+		}
 		if in.Fields != nil {
 			if err := setWatchFields(db, id, *in.Fields); err != nil {
 				http.Error(w, err.Error(), 500)
@@ -565,6 +605,28 @@ func serve(ctx context.Context, db *sql.DB, addr, version, dbPath string, lb *li
 	mux.HandleFunc("DELETE /api/watchlist/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		writeJSON(w, map[string]string{"status": "ok"}, deleteWatch(db, id))
+	})
+
+	mux.HandleFunc("GET /api/watchlist/by-ean", func(w http.ResponseWriter, r *http.Request) {
+		ean := strings.TrimSpace(r.URL.Query().Get("ean"))
+		id, ok := findWatchByKey(db, "", ean)
+		if ok {
+			_ = linkWatch(db, id, "", ean)
+		}
+		writeJSON(w, map[string]any{"linked": ok, "id": id}, nil)
+	})
+
+	mux.HandleFunc("GET /api/watchlist/lookup", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, lookupEAN(r.URL.Query().Get("ean")), nil)
+	})
+
+	mux.HandleFunc("POST /api/watchlist/fetch", func(w http.ResponseWriter, r *http.Request) {
+		var in struct{ URL string }
+		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+		writeJSON(w, fetchLinkMeta(in.URL), nil)
 	})
 
 	mux.HandleFunc("GET /api/search", func(w http.ResponseWriter, r *http.Request) {
